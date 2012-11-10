@@ -15,6 +15,10 @@ category:            Game
 build-type:          Simple
 cabal-version:       >=1.8
 
+source-repository head
+  Type:     git
+  Location: git://github.com/rwbarton/rw.git
+
 executable rw
   main-is:             Main.hs
   -- other-modules:       
