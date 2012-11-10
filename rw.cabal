@@ -4,7 +4,7 @@
 name:                rw
 version:             0.1.0.0
 synopsis:            DCSS bot
--- description:         
+description:         A bot that plays crawl!
 homepage:            https://github.com/rwbarton/rw
 license:             BSD3
 license-file:        LICENSE
