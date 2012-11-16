@@ -23,6 +23,7 @@ executable rw
                        bytestring ==0.9.*,
                        chan-split ==0.5.*,
                        process ==1.1.*,
+                       reactive-banana ==0.7.*,
                        transformers ==0.3.*,
                        unordered-containers ==0.2.*,
                        websockets ==0.7.1.0.1,
