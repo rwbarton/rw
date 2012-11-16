@@ -39,7 +39,7 @@ connectToWebtiles :: AccountInfo -> IO (InChan A.Object, OutChan A.Object)
 connectToWebtiles config = do
   (sendIncoming, recvIncoming) <- newSplitChan
   (sendOutgoing, recvOutgoing) <- newSplitChan
-  forkIO $ connect (server config) 8080 "/socket" $ asHybi10 $ do
+  forkIO $ connect (server config) (port config) "/socket" $ asHybi10 $ do
     sink <- getSink
     liftIO $ forkIO $ forever $ do
       object <- readChan recvOutgoing
