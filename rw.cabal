@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                rw
-version:             0.1.0.0
+version:             2.0
 synopsis:            DCSS bot
 description:         A bot that plays crawl!
 homepage:            https://github.com/rwbarton/rw
