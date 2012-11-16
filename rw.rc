@@ -1,0 +1,18 @@
+species=Troll
+class=Chaos Knight
+weapon=claws
+
+char_set=ascii
+cset_ascii=cloud:#
+
+travel_delay=-1
+explore_delay=-1
+clear_messages=true
+
+default_manual_training=true
+skill_focus=false
+
+force_more_message=
+show_more=false
+
+auto_list=false
