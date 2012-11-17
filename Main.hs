@@ -6,7 +6,7 @@ import Control.Monad (forever)
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.IO (hPutStrLn, stderr,
-                  openFile, IOMode(WriteMode))
+                  openFile, IOMode(WriteMode), hFlush)
 
 import Control.Concurrent.Chan.Split (OutChan, dupChan, readChan)
 import Text.Groom (groom)
@@ -21,7 +21,10 @@ logReceived recvChan = do
   recvLogged <- dupChan recvChan
   forkIO $ do
     logFile <- openFile "rw.log" WriteMode
-    forever $ hPutStrLn logFile . groom =<< readChan recvLogged
+    forever $ do
+      item <- readChan recvLogged
+      hPutStrLn logFile $ groom item
+      hFlush logFile
   return ()
 
 connectAndPlay :: AccountInfo -> IO ()
