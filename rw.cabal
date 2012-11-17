@@ -23,6 +23,7 @@ executable rw
                        attoparsec ==0.10.*,
                        bytestring ==0.9.*,
                        chan-split ==0.5.*,
+                       containers ==0.4.*,
                        groom ==0.1.*,
                        lens ==3.3.*,
                        process ==1.1.*,
