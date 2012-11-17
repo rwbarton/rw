@@ -35,11 +35,14 @@ setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
   let demultiplexed = R.spill $ fmap demultiplex input
 
-      messageArea = txtArea "messages" demultiplexed
-      messageUpdates = actualChanges messageArea input
+      (_messageArea, messageUpdates) = txtArea "messages" demultiplexed
       messages = R.spill $ fmap (\area -> filter (not . T.null) $ IM.elems area) messageUpdates
 
-      output = bananaCrawl demultiplexed
+      ourTurn = R.filterE (T.isInfixOf "Lambda") messages
+      forceMore = R.filterE (T.isInfixOf "--more--") messages
+
+      output = fmap (const $ textInput ".") ourTurn `R.union`
+               fmap (const $ textInput " ") forceMore
   R.reactimate $ fmap T.putStrLn messages
   R.reactimate $ fmap sendHandler output
 
@@ -49,24 +52,22 @@ demultiplex msg
     concatMap demultiplex (msg^..at "msgs".traverse.asArray.traverse.asObject)
   | otherwise = [msg]
 
-txtArea :: T.Text -> R.Event t A.Object -> R.Behavior t (IM.IntMap T.Text)
-txtArea txtID input = area
-  where areaUpdates = R.spill $
+-- XXX what to do about incremental updates?
+txtArea :: T.Text -> R.Event t A.Object -> (R.Behavior t (IM.IntMap T.Text), R.Event t (IM.IntMap T.Text))
+txtArea txtID input = (areaB, R.filterApply (fmap (/=) areaB) areaE)
+  where areaUpdates = fmap (foldr (.) id . map (\(k, v) -> at (read $ T.unpack k) .~ Just v)) .
                       filterBy (\msg -> do
                                    guard  $ msg ^? traverseAt "msg".asString == Just "txt"
                                      &&     msg ^? traverseAt "id".asString == Just txtID
                                    return $ msg ^.. traverseAt "lines".asObject.
                                      withIndicesOf (itraversed <. asString)
-                               ) input
-        area = R.accumB IM.empty $ fmap (\(k, v) -> at (read $ T.unpack k) .~ Just v) areaUpdates
+                               ) $
+                      input
+        areaB = R.accumB IM.empty areaUpdates
+        areaE = R.accumE IM.empty areaUpdates
 
-bananaCrawl :: R.Event t A.Object -> R.Event t A.Object
-bananaCrawl input = fmap (const rest) input `R.union` fmap (const space) input
-  where rest = H.fromList [
-          ("msg", "input"),
-          ("text", ".")
-          ]
-        space = H.fromList [
-          ("msg", "input"),
-          ("text", " ")
-          ]
+textInput :: T.Text -> A.Object
+textInput text = H.fromList [
+  ("msg", "input"),
+  ("text", A.String text)
+  ]
