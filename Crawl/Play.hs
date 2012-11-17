@@ -41,7 +41,9 @@ setupNetwork recvHandler sendHandler = do
       ourTurn = R.filterE (T.isInfixOf "Lambda") messages
       forceMore = R.filterE (T.isInfixOf "--more--") messages
 
-      output = fmap (const $ textInput ".") ourTurn `R.union`
+      go = fmap (textInput . T.singleton . ("hjklyubn" !!)) $ randomize (0,7) ourTurn
+
+      output = go `R.union`
                fmap (const $ textInput " ") forceMore
   R.reactimate $ fmap T.putStrLn messages
   R.reactimate $ fmap sendHandler output
