@@ -20,10 +20,13 @@ executable rw
   ghc-options:         -Wall -fno-warn-unused-do-bind
   build-depends:       base ==4.5.*,
                        aeson ==0.6.*,
+                       attoparsec ==0.10.*,
                        bytestring ==0.9.*,
                        chan-split ==0.5.*,
+                       lens ==3.3.*,
                        process ==1.1.*,
                        reactive-banana ==0.7.*,
+                       text ==0.11.*,
                        transformers ==0.3.*,
                        unordered-containers ==0.2.*,
                        websockets ==0.7.1.0.1,
