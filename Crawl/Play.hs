@@ -63,6 +63,7 @@ txtArea txtID input = (areaB, R.filterApply (fmap (/=) areaB) areaE)
                                      withIndicesOf (itraversed <. asString)
                                ) $
                       input
+        -- XXX use mapAccum
         areaB = R.accumB IM.empty areaUpdates
         areaE = R.accumE IM.empty areaUpdates
 
