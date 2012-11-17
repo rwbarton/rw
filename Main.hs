@@ -5,10 +5,11 @@ import Control.Concurrent (forkIO)
 import Control.Monad (forever)
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(ExitFailure))
-import System.IO (hPutStrLn, hPrint, stderr,
+import System.IO (hPutStrLn, stderr,
                   openFile, IOMode(WriteMode))
 
 import Control.Concurrent.Chan.Split (OutChan, dupChan, readChan)
+import Text.Groom (groom)
 
 import Crawl.AccountInfo
 import Crawl.Connect
@@ -20,7 +21,7 @@ logReceived recvChan = do
   recvLogged <- dupChan recvChan
   forkIO $ do
     logFile <- openFile "rw.log" WriteMode
-    forever $ readChan recvLogged >>= hPrint logFile
+    forever $ hPutStrLn logFile . groom =<< readChan recvLogged
   return ()
 
 connectAndPlay :: AccountInfo -> IO ()
