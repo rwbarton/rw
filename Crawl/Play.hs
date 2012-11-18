@@ -48,9 +48,11 @@ setupNetwork recvHandler sendHandler = do
                                          msg ^? traverseAt "flags" . asInteger . bitAt 12 == Just True)
                       demultiplexed
 
-      (_crtArea, crtUpdates) = txtArea "crt" demultiplexed
-      goodbye = R.filterE (\area -> area ^? traverseAt 0 . to (T.isInfixOf "Goodbye, ") == Just True)
-                crtUpdates
+      goodbye = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "txt" &&
+                                   msg ^? traverseAt "id"  == Just "crt" &&
+                                   msg ^? traverseAt "lines".asObject.traverseAt "0".asString.to (T.isInfixOf "Goodbye,")
+                                   == Just True
+                          ) demultiplexed
 
       gameOver = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "game_ended") demultiplexed
 
