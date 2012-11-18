@@ -5,10 +5,12 @@ module Crawl.Play (
   ) where
 
 import Control.Monad (forever, guard)
+import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^.), (^..), (^?), (.~), at, traverse, traverseAt,
+import Control.Lens ((^.), (^..), (^?), (.~), at, to, traverse, traverseAt,
                      withIndicesOf, itraversed, (<.))
+import Data.Bits.Lens (bitAt)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
 import qualified Data.IntMap as IM
@@ -41,14 +43,28 @@ setupNetwork recvHandler sendHandler = do
       ourTurn = R.filterE (T.isInfixOf "Lambda") messages
       forceMore = R.filterE (T.isInfixOf "--more--") messages
 
+      inventoryMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "menu" &&
+                                         msg ^? traverseAt "tag" == Just "inventory" &&
+                                         msg ^? traverseAt "flags" . asInteger . bitAt 12 == Just True)
+                      demultiplexed
+
+      (_crtArea, crtUpdates) = txtArea "crt" demultiplexed
+      goodbye = R.filterE (\area -> area ^? traverseAt 0 . to (T.isInfixOf "Goodbye, ") == Just True)
+                crtUpdates
+
+      gameOver = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "game_ended") demultiplexed
+
       goText = fmap (T.singleton . ("hjklyubn" !!)) $ randomize (0,7) ourTurn
-      clearText = fmap (const " ") forceMore
+      clearText = fmap (const " ") forceMore `R.union`
+                  fmap (const " ") inventoryMore `R.union`
+                  fmap (const " ") goodbye
 
       outputText = goText `R.union` clearText
       output = fmap textInput outputText
   R.reactimate $ fmap T.putStrLn messages
   R.reactimate $ fmap print outputText
   R.reactimate $ fmap sendHandler output
+  R.reactimate $ fmap (const $ exitWith ExitSuccess) gameOver
 
 demultiplex :: A.Object -> [A.Object]
 demultiplex msg
