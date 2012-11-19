@@ -17,7 +17,7 @@ source-repository head
 
 executable rw
   main-is:             Main.hs
-  ghc-options:         -Wall -fno-warn-unused-do-bind
+  ghc-options:         -Wall -fno-warn-unused-do-bind -O2 -rtsopts
   build-depends:       base ==4.5.*,
                        aeson ==0.6.*,
                        attoparsec ==0.10.*,
