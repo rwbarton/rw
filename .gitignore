@@ -7,3 +7,8 @@ cabal-dev
 *.acct
 *.log
 rw.rc
+rw.aux
+rw.hp
+rw.pdf
+rw.prof
+rw.ps
