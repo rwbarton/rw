@@ -42,7 +42,8 @@ setupNetwork recvHandler sendHandler = do
 
       ourTurn = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "input_mode" &&
                                    msg ^? traverseAt "mode".asInteger == Just 1) demultiplexed
-      forceMore = R.filterE (T.isInfixOf "--more--") messages
+      forceMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "input_mode" &&
+                                     msg ^? traverseAt "mode".asInteger == Just 5) demultiplexed
 
       inventoryMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "menu" &&
                                          msg ^? traverseAt "tag" == Just "inventory" &&
