@@ -40,7 +40,8 @@ setupNetwork recvHandler sendHandler = do
       (_messageArea, messageUpdates) = txtArea "messages" demultiplexed
       messages = R.spill $ fmap (\area -> filter (not . T.null) $ IM.elems area) messageUpdates
 
-      ourTurn = R.filterE (T.isInfixOf "Lambda") messages
+      ourTurn = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "input_mode" &&
+                                   msg ^? traverseAt "mode".asInteger == Just 1) demultiplexed
       forceMore = R.filterE (T.isInfixOf "--more--") messages
 
       inventoryMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "menu" &&
