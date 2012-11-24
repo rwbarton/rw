@@ -9,12 +9,10 @@ import Data.Maybe (fromMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^.), (^..), (^?), (.~), at, to, traverse, traverseAt,
-                     withIndicesOf, itraversed, (<.))
+import Control.Lens ((^.), (^..), (^?), at, to, traverse, traverseAt)
 import Data.Bits.Lens (bitAt)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
-import qualified Data.IntMap as IM
 import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
@@ -75,21 +73,6 @@ demultiplex msg
   | Just "multi" == msg^.at "msg" =
     concatMap demultiplex (msg^..at "msgs".traverse.asArray.traverse.asObject)
   | otherwise = [msg]
-
--- XXX what to do about incremental updates?
-txtArea :: T.Text -> R.Event t A.Object -> (R.Behavior t (IM.IntMap T.Text), R.Event t (IM.IntMap T.Text))
-txtArea txtID input = (areaB, R.filterApply (fmap (/=) areaB) areaE)
-  where areaUpdates = fmap (foldr (.) id . map (\(k, v) -> at (read $ T.unpack k) .~ Just v)) .
-                      filterBy (\msg -> do
-                                   guard  $ msg ^? traverseAt "msg".asString == Just "txt"
-                                     &&     msg ^? traverseAt "id".asString == Just txtID
-                                   return $ msg ^.. traverseAt "lines".asObject.
-                                     withIndicesOf (itraversed <. asString)
-                               ) $
-                      input
-        -- XXX use mapAccum
-        areaB = R.accumB IM.empty areaUpdates
-        areaE = R.accumE IM.empty areaUpdates
 
 -- XXX also have access to channel number, turn count
 messagesOf :: R.Event t A.Object -> R.Event t T.Text
