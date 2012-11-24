@@ -1,2 +1,2 @@
-rw.rc: rw.conf rw.lua
-	cpp -P rw.conf > rw.rc
+rw.rc: rw.conf
+	cp rw.conf rw.rc
