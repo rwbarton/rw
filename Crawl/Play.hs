@@ -5,6 +5,7 @@ module Crawl.Play (
   ) where
 
 import Control.Monad (forever, guard)
+import Data.Maybe (fromMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
@@ -37,8 +38,7 @@ setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
   let demultiplexed = R.spill $ fmap demultiplex input
 
-      (_messageArea, messageUpdates) = txtArea "messages" demultiplexed
-      messages = R.spill $ fmap (\area -> filter (not . T.null) $ IM.elems area) messageUpdates
+      messages = messagesOf demultiplexed
 
       ourTurn = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "input_mode" &&
                                    msg ^? traverseAt "mode".asInteger == Just 1) demultiplexed
@@ -90,6 +90,16 @@ txtArea txtID input = (areaB, R.filterApply (fmap (/=) areaB) areaE)
         -- XXX use mapAccum
         areaB = R.accumB IM.empty areaUpdates
         areaE = R.accumE IM.empty areaUpdates
+
+-- XXX also have access to channel number, turn count
+messagesOf :: R.Event t A.Object -> R.Event t T.Text
+messagesOf input = R.spill $
+                   filterBy (\msg -> do
+                                guard  $ msg ^? traverseAt "msg".asString == Just "msgs"
+                                let old_msgs = fromMaybe 0 $ msg ^? traverseAt "old_msgs".asInteger
+                                return $ drop (fromInteger old_msgs)
+                                  (msg ^.. traverseAt "messages".asArray.traverse.asObject.traverseAt "text".asString)) $
+                   input
 
 textInput :: T.Text -> A.Object
 textInput text = H.fromList [
