@@ -36,6 +36,9 @@ setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
   let demultiplexed = R.spill $ fmap demultiplex input
 
+      ping = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "ping") demultiplexed
+      pong = fmap (const $ H.fromList [("msg", "pong")]) ping
+
       messages = messagesOf demultiplexed
 
       inputModeEvents = filterBy (\msg -> do
@@ -66,7 +69,7 @@ setupNetwork recvHandler sendHandler = do
                   fmap (const " ") goodbye
 
       outputText = goText `R.union` clearText
-      output = fmap textInput outputText
+      output = pong `R.union` fmap textInput outputText
   R.reactimate $ fmap T.putStrLn messages
   R.reactimate $ fmap print outputText
   R.reactimate $ fmap sendHandler output
