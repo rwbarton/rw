@@ -38,10 +38,14 @@ setupNetwork recvHandler sendHandler = do
 
       messages = messagesOf demultiplexed
 
-      ourTurn = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "input_mode" &&
-                                   msg ^? traverseAt "mode".asInteger == Just 1) demultiplexed
-      forceMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "input_mode" &&
-                                     msg ^? traverseAt "mode".asInteger == Just 5) demultiplexed
+      inputModeEvents = filterBy (\msg -> do
+                                     guard $ msg ^? traverseAt "msg" == Just "input_mode"
+                                     msg ^? traverseAt "mode".asInteger) demultiplexed
+      inputModeB = R.stepper 0 inputModeEvents
+      inputModeChanged = R.filterApply (fmap (/=) inputModeB) inputModeEvents
+
+      ourTurn = R.filterE (== 1) inputModeChanged
+      forceMore = R.filterE (== 5) inputModeChanged
 
       inventoryMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "menu" &&
                                          msg ^? traverseAt "tag" == Just "inventory" &&
