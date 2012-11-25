@@ -34,7 +34,7 @@ play recvChan sendChan = do
 setupNetwork :: R.Frameworks t => R.AddHandler A.Object -> (A.Object -> IO ()) -> R.Moment t ()
 setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
-  let demultiplexed = R.spill $ fmap demultiplex input
+  let demultiplexed = spill' $ fmap demultiplex input
 
       ping = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "ping") demultiplexed
       pong = fmap (const $ H.fromList [("msg", "pong")]) ping
@@ -83,7 +83,7 @@ demultiplex msg
 
 -- XXX also have access to channel number, turn count
 messagesOf :: R.Event t A.Object -> R.Event t T.Text
-messagesOf input = R.spill $
+messagesOf input = spill' $
                    filterBy (\msg -> do
                                 guard  $ msg ^? traverseAt "msg".asString == Just "msgs"
                                 let old_msgs = fromMaybe 0 $ msg ^? traverseAt "old_msgs".asInteger
