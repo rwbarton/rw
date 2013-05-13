@@ -29,12 +29,12 @@ play recvChan sendChan = do
   R.actuate network
   forever $ do
     msg <- readChan recvChan
-    recvFire msg
+    mapM_ recvFire $ demultiplex msg
     
 setupNetwork :: R.Frameworks t => R.AddHandler A.Object -> (A.Object -> IO ()) -> R.Moment t ()
 setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
-  let demultiplexed = spill' $ fmap demultiplex input
+  let demultiplexed = input
 
       ping = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "ping") demultiplexed
       pong = fmap (const $ H.fromList [("msg", "pong")]) ping
@@ -76,10 +76,8 @@ setupNetwork recvHandler sendHandler = do
   R.reactimate $ fmap (const $ exitWith ExitSuccess) gameOver
 
 demultiplex :: A.Object -> [A.Object]
-demultiplex msg
-  | Just "multi" == msg^.at "msg" =
-    concatMap demultiplex (msg^..at "msgs".traverse.asArray.traverse.asObject)
-  | otherwise = [msg]
+demultiplex msg = {- if null subs then [msg] else -} subs
+  where subs = msg^..at "msgs".traverse.asArray.traverse.asObject
 
 -- XXX also have access to channel number, turn count
 messagesOf :: R.Event t A.Object -> R.Event t T.Text
