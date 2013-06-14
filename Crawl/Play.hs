@@ -9,7 +9,7 @@ import Data.Maybe (fromMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^.), (^..), (^?), at, to, traverse, traverseAt)
+import Control.Lens ((^..), (^?), at, to, traverse, traverseAt)
 import Data.Bits.Lens (bitAt)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
