@@ -81,7 +81,7 @@ demultiplex msg = {- if null subs then [msg] else -} subs
 
 -- XXX also have access to channel number, turn count
 messagesOf :: R.Event t A.Object -> R.Event t T.Text
-messagesOf input = spill' $
+messagesOf input = R.spill $
                    filterBy (\msg -> do
                                 guard  $ msg ^? traverseAt "msg".asString == Just "msgs"
                                 let old_msgs = fromMaybe 0 $ msg ^? traverseAt "old_msgs".asInteger
