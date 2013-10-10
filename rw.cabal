@@ -24,7 +24,7 @@ executable rw
                        bytestring ==0.9.*,
                        chan-split ==0.5.*,
                        groom ==0.1.*,
-                       lens ==3.3.*,
+                       lens ==3.9.*,
                        process ==1.1.*,
                        random ==1.0.*,
                        reactive-banana ==0.7.1.3,

@@ -9,7 +9,7 @@ import Data.Maybe (fromMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^..), (^?), at, to, traverse, traverseAt)
+import Control.Lens ((^..), (^?), at, to, traverse, ix)
 import Data.Bits.Lens (bitAt)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
@@ -36,32 +36,32 @@ setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
   let demultiplexed = input
 
-      ping = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "ping") demultiplexed
+      ping = R.filterE (\msg -> msg ^? ix "msg" == Just "ping") demultiplexed
       pong = fmap (const $ H.fromList [("msg", "pong")]) ping
 
       messages = messagesOf demultiplexed
 
       inputModeEvents = filterBy (\msg -> do
-                                     guard $ msg ^? traverseAt "msg" == Just "input_mode"
-                                     msg ^? traverseAt "mode".asInteger) demultiplexed
+                                     guard $ msg ^? ix "msg" == Just "input_mode"
+                                     msg ^? ix "mode".asInteger) demultiplexed
       inputModeB = R.stepper 0 inputModeEvents
       inputModeChanged = R.filterApply (fmap (/=) inputModeB) inputModeEvents
 
       ourTurn = R.filterE (== 1) inputModeChanged
       forceMore = R.filterE (== 5) inputModeChanged
 
-      inventoryMore = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "menu" &&
-                                         msg ^? traverseAt "tag" == Just "inventory" &&
-                                         msg ^? traverseAt "flags" . asInteger . bitAt 12 == Just True)
+      inventoryMore = R.filterE (\msg -> msg ^? ix "msg" == Just "menu" &&
+                                         msg ^? ix "tag" == Just "inventory" &&
+                                         msg ^? ix "flags" . asInteger . bitAt 12 == Just True)
                       demultiplexed
 
-      goodbye = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "txt" &&
-                                   msg ^? traverseAt "id"  == Just "crt" &&
-                                   msg ^? traverseAt "lines".asObject.traverseAt "0".asString.to (T.isInfixOf "Goodbye,")
+      goodbye = R.filterE (\msg -> msg ^? ix "msg" == Just "txt" &&
+                                   msg ^? ix "id"  == Just "crt" &&
+                                   msg ^? ix "lines".asObject.ix "0".asString.to (T.isInfixOf "Goodbye,")
                                    == Just True
                           ) demultiplexed
 
-      gameOver = R.filterE (\msg -> msg ^? traverseAt "msg" == Just "game_ended") demultiplexed
+      gameOver = R.filterE (\msg -> msg ^? ix "msg" == Just "game_ended") demultiplexed
 
       goText = fmap (T.singleton . ("hjklyubn" !!)) $ randomize (0,7) ourTurn
       clearText = fmap (const " ") forceMore `R.union`
@@ -83,10 +83,10 @@ demultiplex msg = {- if null subs then [msg] else -} subs
 messagesOf :: R.Event t A.Object -> R.Event t T.Text
 messagesOf input = R.spill $
                    filterBy (\msg -> do
-                                guard  $ msg ^? traverseAt "msg".asString == Just "msgs"
-                                let old_msgs = fromMaybe 0 $ msg ^? traverseAt "old_msgs".asInteger
+                                guard  $ msg ^? ix "msg".asString == Just "msgs"
+                                let old_msgs = fromMaybe 0 $ msg ^? ix "old_msgs".asInteger
                                 return $ drop (fromInteger old_msgs)
-                                  (msg ^.. traverseAt "messages".asArray.traverse.asObject.traverseAt "text".asString)) $
+                                  (msg ^.. ix "messages".asArray.traverse.asObject.ix "text".asString)) $
                    input
 
 textInput :: T.Text -> A.Object
