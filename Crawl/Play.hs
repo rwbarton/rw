@@ -10,6 +10,7 @@ import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
 import Control.Lens ((^..), (^?), at, to, traverse, ix)
+import Control.Lens.Aeson (_Integer, _Object, _String, _Array)
 import Data.Bits.Lens (bitAt)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
@@ -18,7 +19,6 @@ import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import Crawl.AesonLens
 import Crawl.BananaUtils
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
@@ -30,7 +30,7 @@ play recvChan sendChan = do
   forever $ do
     msg <- readChan recvChan
     mapM_ recvFire $ demultiplex msg
-    
+
 setupNetwork :: R.Frameworks t => R.AddHandler A.Object -> (A.Object -> IO ()) -> R.Moment t ()
 setupNetwork recvHandler sendHandler = do
   input <- R.fromAddHandler recvHandler
@@ -43,7 +43,7 @@ setupNetwork recvHandler sendHandler = do
 
       inputModeEvents = filterBy (\msg -> do
                                      guard $ msg ^? ix "msg" == Just "input_mode"
-                                     msg ^? ix "mode".asInteger) demultiplexed
+                                     msg ^? ix "mode"._Integer) demultiplexed
       inputModeB = R.stepper 0 inputModeEvents
       inputModeChanged = R.filterApply (fmap (/=) inputModeB) inputModeEvents
 
@@ -52,12 +52,12 @@ setupNetwork recvHandler sendHandler = do
 
       inventoryMore = R.filterE (\msg -> msg ^? ix "msg" == Just "menu" &&
                                          msg ^? ix "tag" == Just "inventory" &&
-                                         msg ^? ix "flags" . asInteger . bitAt 12 == Just True)
+                                         msg ^? ix "flags" . _Integer . bitAt 12 == Just True)
                       demultiplexed
 
       goodbye = R.filterE (\msg -> msg ^? ix "msg" == Just "txt" &&
                                    msg ^? ix "id"  == Just "crt" &&
-                                   msg ^? ix "lines".asObject.ix "0".asString.to (T.isInfixOf "Goodbye,")
+                                   msg ^? ix "lines"._Object.ix "0"._String.to (T.isInfixOf "Goodbye,")
                                    == Just True
                           ) demultiplexed
 
@@ -77,16 +77,16 @@ setupNetwork recvHandler sendHandler = do
 
 demultiplex :: A.Object -> [A.Object]
 demultiplex msg = {- if null subs then [msg] else -} subs
-  where subs = msg^..at "msgs".traverse.asArray.traverse.asObject
+  where subs = msg^..at "msgs".traverse._Array.traverse._Object
 
 -- XXX also have access to channel number, turn count
 messagesOf :: R.Event t A.Object -> R.Event t T.Text
 messagesOf input = R.spill $
                    filterBy (\msg -> do
-                                guard  $ msg ^? ix "msg".asString == Just "msgs"
-                                let old_msgs = fromMaybe 0 $ msg ^? ix "old_msgs".asInteger
+                                guard  $ msg ^? ix "msg"._String == Just "msgs"
+                                let old_msgs = fromMaybe 0 $ msg ^? ix "old_msgs"._Integer
                                 return $ drop (fromInteger old_msgs)
-                                  (msg ^.. ix "messages".asArray.traverse.asObject.ix "text".asString)) $
+                                  (msg ^.. ix "messages"._Array.traverse._Object.ix "text"._String)) $
                    input
 
 textInput :: T.Text -> A.Object
