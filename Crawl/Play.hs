@@ -52,13 +52,13 @@ setupNetwork recvHandler sendHandler = do
 
       inventoryMore = R.filterE (\msg -> msg ^? key "msg" == Just "menu" &&
                                          msg ^? key "tag" == Just "inventory" &&
-                                         msg ^? key "flags" . _Integer . bitAt 12 == Just True)
+                                         msg ^? key "flags"._Integer.bitAt 12 == Just True)
                       demultiplexed
 
       goodbye = R.filterE (\msg -> msg ^? key "msg" == Just "txt" &&
                                    msg ^? key "id"  == Just "crt" &&
-                                   msg ^? key "lines".key "0"._String.to (T.isInfixOf "Goodbye,") == Just True
-                          ) demultiplexed
+                                   msg ^? key "lines".key "0"._String.to (T.isInfixOf "Goodbye,") == Just True)
+                demultiplexed
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
 
@@ -75,14 +75,13 @@ setupNetwork recvHandler sendHandler = do
   R.reactimate $ fmap (const $ exitWith ExitSuccess) gameOver
 
 demultiplex :: A.Object -> [A.Value]
-demultiplex msg = {- if null subs then [msg] else -} subs
-  where subs = msg^..at "msgs".traverse._Array.traverse
+demultiplex msg = msg^..at "msgs".traverse._Array.traverse
 
 -- XXX also have access to channel number, turn count
 messagesOf :: R.Event t A.Value -> R.Event t T.Text
 messagesOf input = R.spill $
                    filterBy (\msg -> do
-                                guard $ msg ^? key "msg"._String == Just "msgs"
+                                guard $ msg ^? key "msg" == Just "msgs"
                                 let old_msgs = fromMaybe 0 $ msg ^? key "old_msgs"._Integer
                                 return $ drop (fromInteger old_msgs)
                                   (msg ^.. key "messages"._Array.traverse.key "text"._String)) $
