@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Crawl.BananaUtils
+import Crawl.LevelMap
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
 play recvChan sendChan = do
@@ -61,6 +62,9 @@ setupNetwork recvHandler sendHandler = do
                 demultiplexed
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
+
+      -- not actually used yet
+      -- level = levelMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
 
       goText = fmap (T.singleton . ("hjklyubn" !!)) $ randomize (0,7) ourTurn
       clearText = fmap (const " ") forceMore `R.union`
