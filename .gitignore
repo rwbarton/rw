@@ -12,3 +12,5 @@ rw.hp
 rw.pdf
 rw.prof
 rw.ps
+crawl-debug
+include/enums.h

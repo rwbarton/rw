@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+cd ./$(git rev-parse --show-cdup)
+if ! type dwarf2enum >/dev/null; then
+    echo "dwarf2enum missing; please install into PATH"
+    exit 1
+fi
+pushd crawl-debug/crawl-ref/source >/dev/null
+make -j${THREADS:-1} WEBTILES=y debug
+popd >/dev/null
+make include/enums.h
