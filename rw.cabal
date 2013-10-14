@@ -35,3 +35,6 @@ executable rw
                        unordered-containers ==0.2.*,
                        websockets ==0.7.4.1,
                        zlib-bindings ==0.1.*
+  build-tools:         c2hs
+  include-dirs:        include
+  other-modules:       Crawl.Bindings
