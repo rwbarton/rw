@@ -20,9 +20,11 @@ executable rw
   ghc-options:         -Wall -fno-warn-unused-do-bind -O2 -funbox-strict-fields -rtsopts
   build-depends:       base ==4.5.*,
                        aeson ==0.6.*,
+                       astar ==0.2.*,
                        attoparsec ==0.10.*,
                        bytestring ==0.9.*,
                        chan-split ==0.5.*,
+                       containers ==0.4.*,
                        groom ==0.1.*,
                        hashable ==1.1.*,
                        lens ==3.9.*,

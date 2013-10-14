@@ -3,7 +3,7 @@
 module Crawl.LevelMap where
 
 import Control.Monad (mplus)
-import Control.Lens ((^?), (^..), (.~), (%~), _1, traverse, at)
+import Control.Lens ((^?), (^..), (.~), (%~), _1, traverse, at, enum)
 import Numeric.Lens (integral)
 import Control.Lens.Aeson (_Bool, _Array, _Integer, key)
 import qualified Data.Aeson as A
@@ -11,9 +11,11 @@ import qualified Data.Hashable as H
 import qualified Data.HashMap.Strict as H
 import qualified Reactive.Banana as R
 
-type MapCell = Int              -- dungeon_feature_type _feat:8;
+import Crawl.Bindings
 
-data Coord = Coord !Int !Int deriving Eq
+type MapCell = Feature
+
+data Coord = Coord !Int !Int deriving (Eq, Ord)
 instance H.Hashable Coord where
   hash (Coord x y) = x + 100 * y
 
@@ -26,7 +28,7 @@ levelMap input = R.accumB H.empty $ fmap updateMap input
                   Just True -> const H.empty
                   _ -> id
                 cellMsgs = withCoordinates $ msg ^.. key "cells"._Array.traverse
-                updateCell (coord, cellMsg) = maybe id ((at coord .~) . Just) $ cellMsg ^? key "f"._Integer.integral
+                updateCell (coord, cellMsg) = maybe id ((at coord .~) . Just) $ cellMsg ^? key "f"._Integer.integral.enum
 
 withCoordinates :: [A.Value] -> [(Coord, A.Value)]
 withCoordinates vs = map (_1 %~ (\(Just x, Just y) -> Coord x y)) $ scanl1 f $ map extractCoordinates vs

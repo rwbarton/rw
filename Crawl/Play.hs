@@ -4,6 +4,7 @@ module Crawl.Play (
   play
   ) where
 
+import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forever, guard)
 import Data.Maybe (fromMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
@@ -12,6 +13,7 @@ import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
 import Control.Lens ((^..), (^?), at, to, traverse)
 import Control.Lens.Aeson (_Integer, _String, _Array, key)
 import Data.Bits.Lens (bitAt)
+import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
 import qualified Reactive.Banana as R
@@ -20,6 +22,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Crawl.BananaUtils
+import Crawl.Explore
 import Crawl.LevelMap
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
@@ -63,10 +66,15 @@ setupNetwork recvHandler sendHandler = do
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
 
-      -- not actually used yet
-      -- level = levelMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
+      level = levelMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
+      loc = R.stepper (Coord 0 0) $
+            filterBy (\msg -> do
+                         guard  $ msg ^? key "msg" == Just "player"
+                         x <- msg ^? key "pos".key "x"._Integer.integral
+                         y <- msg ^? key "pos".key "y"._Integer.integral
+                         return (Coord x y)) demultiplexed
 
-      goText = fmap (T.singleton . ("hjklyubn" !!)) $ randomize (0,7) ourTurn
+      goText = (explore <$> level <*> loc) R.<@ ourTurn
       clearText = fmap (const " ") forceMore `R.union`
                   fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye

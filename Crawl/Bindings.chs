@@ -2,4 +2,4 @@ module Crawl.Bindings where
 
 #include "enums.h"
 
-{# enum dungeon_feature_type as Feature {} #}
+{# enum dungeon_feature_type as Feature {} deriving (Eq, Ord) #}
