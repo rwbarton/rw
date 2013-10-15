@@ -36,7 +36,7 @@ moveTo (Coord sx sy) (Coord tx ty) = case (tx - sx, ty - sy) of
 
 isPassable :: Feature -> Bool
 isPassable feat | DNGN_MANGROVE <= feat && feat <= DNGN_DEEP_WATER = False
-isPassable feat = True
+isPassable _ = True
 
 movementCost :: Feature -> Int
-movementCost feat = 1
+movementCost _ = 1
