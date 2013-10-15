@@ -24,6 +24,7 @@ import qualified Data.Text.IO as T
 import Crawl.BananaUtils
 import Crawl.Explore
 import Crawl.LevelMap
+import Crawl.Move
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
 play recvChan sendChan = do
@@ -74,7 +75,7 @@ setupNetwork recvHandler sendHandler = do
                          y <- msg ^? key "pos".key "y"._Integer.integral
                          return (Coord x y)) demultiplexed
 
-      goText = (explore <$> level <*> loc) R.<@ ourTurn
+      goText = fmap (moveToText . fromMaybe Rest) $ (explore <$> level <*> loc) R.<@ ourTurn
       clearText = fmap (const " ") forceMore `R.union`
                   fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
