@@ -5,7 +5,7 @@ module Crawl.Play (
   ) where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forever, guard)
+import Control.Monad (forever, guard, msum)
 import Data.Maybe (fromMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
@@ -16,6 +16,7 @@ import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
@@ -67,6 +68,8 @@ setupNetwork recvHandler sendHandler = do
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
 
+      statGain = R.filterE (T.isInfixOf "Increase (S)trength, (I)ntelligence, or (D)exterity") messages
+
       level = levelMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       loc = R.stepper (Coord 0 0) $
             filterBy (\msg -> do
@@ -75,8 +78,16 @@ setupNetwork recvHandler sendHandler = do
                          y <- msg ^? key "pos".key "y"._Integer.integral
                          return (Coord x y)) demultiplexed
 
-      goText = fmap (moveToText . fromMaybe Rest) $ (explore <$> level <*> loc) R.<@ ourTurn
-      clearText = fmap (const " ") forceMore `R.union`
+      monsters = monsterMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
+      adjacent = (\m (Coord x y) -> msum [ Just (Go dx dy)
+                                         | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
+                                           let neighbor = Coord (x+dx) (y+dy),
+                                           HS.member neighbor m ]) <$> monsters <*> loc
+
+      move = (\a e -> fromMaybe Rest $ msum [a, e]) <$> adjacent <*> (explore <$> level <*> loc)
+      goText = fmap moveToText $ move R.<@ ourTurn
+      clearText = fmap (const "s") statGain `R.union`
+                  fmap (const " ") forceMore `R.union`
                   fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
 

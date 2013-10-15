@@ -3,12 +3,13 @@
 module Crawl.LevelMap where
 
 import Control.Monad (mplus)
-import Control.Lens ((^?), (^..), (.~), (%~), _1, traverse, at, enum)
+import Control.Lens ((^?), (^..), (.~), (%~), _1, traverse, at, enum, contains)
 import Numeric.Lens (integral)
 import Control.Lens.Aeson (_Bool, _Array, _Integer, key)
 import qualified Data.Aeson as A
 import qualified Data.Hashable as H
 import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import qualified Reactive.Banana as R
 
 import Crawl.Bindings
@@ -29,6 +30,20 @@ levelMap input = R.accumB H.empty $ fmap updateMap input
                   _ -> id
                 cellMsgs = withCoordinates $ msg ^.. key "cells"._Array.traverse
                 updateCell (coord, cellMsg) = maybe id ((at coord .~) . Just) $ cellMsg ^? key "f"._Integer.integral.enum
+
+type MonsterMap = HS.HashSet Coord
+
+monsterMap :: R.Event t A.Value -> R.Behavior t MonsterMap
+monsterMap input = R.accumB HS.empty $ fmap updateMap input
+  where updateMap msg = foldr (.) base (map updateCell cellMsgs)
+          where base = case msg ^? key "clear"._Bool of
+                  Just True -> const HS.empty
+                  _ -> id
+                cellMsgs = withCoordinates $ msg ^.. key "cells"._Array.traverse
+                updateCell (coord, cellMsg) = case cellMsg ^? key "mon" of
+                  Nothing -> id
+                  Just A.Null -> contains coord .~ False
+                  Just _ -> contains coord .~ True
 
 withCoordinates :: [A.Value] -> [(Coord, A.Value)]
 withCoordinates vs = map (_1 %~ (\(Just x, Just y) -> Coord x y)) $ scanl1 f $ map extractCoordinates vs
