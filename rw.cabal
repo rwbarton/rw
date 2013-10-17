@@ -29,6 +29,7 @@ executable rw
                        hashable ==1.1.*,
                        lens ==3.9.*,
                        lens-aeson ==0.1.*,
+                       operational ==0.2.*,
                        process ==1.1.*,
                        random ==1.0.*,
                        reactive-banana ==0.7.1.3,

@@ -11,7 +11,7 @@ import Data.List (elemIndex)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^..), (^?), at, to, traverse, folding)
+import Control.Lens ((^..), (^?), at, to, traverse, folding, enum)
 import Control.Lens.Aeson (_Integer, _String, _Array, key)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Crawl.BananaUtils
+import Crawl.Bindings
 import Crawl.Explore
 import Crawl.LevelMap
 import Crawl.Move
@@ -50,12 +51,9 @@ setupNetwork recvHandler sendHandler = do
 
       inputModeEvents = filterBy (\msg -> do
                                      guard $ msg ^? key "msg" == Just "input_mode"
-                                     msg ^? key "mode"._Integer) demultiplexed
-      inputModeB = R.stepper 0 inputModeEvents
+                                     msg ^? key "mode"._Integer.integral.enum) demultiplexed
+      inputModeB = R.stepper MOUSE_MODE_NORMAL inputModeEvents
       inputModeChanged = R.filterApply (fmap (/=) inputModeB) inputModeEvents
-
-      ourTurn = R.filterE (== 1) inputModeChanged
-      forceMore = R.filterE (== 5) inputModeChanged
 
       inventoryMore = R.filterE (\msg -> msg ^? key "msg" == Just "menu" &&
                                          msg ^? key "tag" == Just "inventory" &&
@@ -66,10 +64,9 @@ setupNetwork recvHandler sendHandler = do
                                    msg ^? key "id"  == Just "crt" &&
                                    msg ^? key "lines".key "0"._String.to (T.isInfixOf "Goodbye,") == Just True)
                 demultiplexed
+      stillAlive = R.stepper True $ fmap (const False) goodbye
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
-
-      statGain = R.filterE (T.isInfixOf "Increase (S)trength, (I)ntelligence, or (D)exterity") messages
 
       level = levelMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       loc = R.stepper (Coord 0 0) $
@@ -94,10 +91,8 @@ setupNetwork recvHandler sendHandler = do
                                            HS.member neighbor m ]) <$> monsters <*> loc
 
       move = (\a e -> fromMaybe Rest $ msum [a, e]) <$> adjacent <*> (explore <$> level <*> loc)
-      goText = fmap moveToText $ move R.<@ ourTurn
-      clearText = fmap (const "s") statGain `R.union`
-                  fmap (const " ") forceMore `R.union`
-                  fmap (const " ") inventoryMore `R.union`
+      goText = sendMoves move messages (R.whenE stillAlive inputModeChanged)
+      clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
 
       outputText = goText `R.union` clearText

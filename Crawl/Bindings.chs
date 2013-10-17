@@ -4,6 +4,8 @@ module Crawl.Bindings where
 
 {# enum dungeon_feature_type as Feature {} deriving (Eq, Ord) #}
 
+{# enum mouse_mode as MouseMode {} deriving (Eq, Show) #}
+
 {# enum object_class_type as ItemBaseType {} deriving (Show) #}
 {# enum weapon_type as WeaponType {} deriving (Eq, Ord) #}
 {# enum missile_type as MissileType {} deriving (Eq, Ord) #}
