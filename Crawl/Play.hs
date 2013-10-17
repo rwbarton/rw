@@ -5,12 +5,13 @@ module Crawl.Play (
   ) where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forever, guard, msum)
+import Control.Monad (forever, guard, msum, mplus)
 import Data.Maybe (fromMaybe)
+import Data.List (elemIndex)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^..), (^?), at, to, traverse)
+import Control.Lens ((^..), (^?), at, to, traverse, folding)
 import Control.Lens.Aeson (_Integer, _String, _Array, key)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
@@ -77,6 +78,14 @@ setupNetwork recvHandler sendHandler = do
                          x <- msg ^? key "pos".key "x"._Integer.integral
                          y <- msg ^? key "pos".key "y"._Integer.integral
                          return (Coord x y)) demultiplexed
+
+      hunger = R.stepper 4 $ filterBy (\msg -> do
+                                          guard $ msg ^? key "msg" == Just "player"
+                                          statuses <- msg ^? key "status"._Array
+                                          (statuses ^? traverse.key "light".folding (`elemIndex` hungerStatuses)) `mplus` return 4
+                                      ) demultiplexed
+        where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
+                                "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
 
       monsters = monsterMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       adjacent = (\m (Coord x y) -> msum [ Just (Go dx dy)
