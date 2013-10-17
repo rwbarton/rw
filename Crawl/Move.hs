@@ -13,6 +13,7 @@ import qualified Reactive.Banana as R
 import Crawl.Bindings
 
 data Move = Go !Int !Int
+          | Attack !Int !Int
           | Rest
 
 
@@ -40,6 +41,16 @@ moveProgram (Go dx dy) = press $ case (dx, dy) of
   (-1,  1) -> "b"
   ( 1,  1) -> "n"
   _        -> error "tried to make illegal move"
+moveProgram (Attack dx dy) = press $ case (dx, dy) of
+  (-1,  0) -> "\8"
+  ( 0,  1) -> "\10"
+  ( 0, -1) -> "\11"
+  ( 1,  0) -> "\12"
+  (-1, -1) -> "\25"
+  ( 1, -1) -> "\21"
+  (-1,  1) -> "\2"
+  ( 1,  1) -> "\14"
+  _        -> error "tried to make illegal attack"
 moveProgram Rest = press "."
 
 sendMoves :: R.Behavior t Move -> R.Event t T.Text -> R.Event t MouseMode -> R.Event t T.Text

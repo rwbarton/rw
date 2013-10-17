@@ -85,7 +85,7 @@ setupNetwork recvHandler sendHandler = do
                                 "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
 
       monsters = monsterMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
-      adjacent = (\m (Coord x y) -> msum [ Just (Go dx dy)
+      adjacent = (\m (Coord x y) -> msum [ Just (Attack dx dy)
                                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
                                            let neighbor = Coord (x+dx) (y+dy),
                                            HS.member neighbor m ]) <$> monsters <*> loc
