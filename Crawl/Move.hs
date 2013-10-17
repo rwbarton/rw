@@ -11,10 +11,12 @@ import qualified Data.Text as T
 import qualified Reactive.Banana as R
 
 import Crawl.Bindings
+import Crawl.Inventory
 
 data Move = Go !Int !Int
           | Attack !Int !Int
           | Rest
+          | Eat InventorySlot
 
 
 data SendOp a where
@@ -52,12 +54,18 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   ( 1,  1) -> "\14"
   _        -> error "tried to make illegal attack"
 moveProgram Rest = press "."
+moveProgram (Eat slot) = do
+  press "e"
+  expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  press (T.singleton $ slotLetter slot)
 
 sendMoves :: R.Behavior t Move -> R.Event t T.Text -> R.Event t MouseMode -> R.Event t T.Text
 sendMoves move messages inputModeChanged = R.spill . fst $
                                            R.mapAccum (return ())
                                            ((handleMessage <$> messages) `R.union` (handleInputMode <$> move R.<@> inputModeChanged))
   where handleMessage :: T.Text -> Send () -> ([T.Text], Send ())
+        handleMessage message prog
+          | "<cyan>Eat " `T.isPrefixOf` message && " (ye/n/q/i?)<lightgrey>" `T.isSuffixOf` message = (["n"], prog) -- ew, don't eat off the ground
         handleMessage "<cyan>Increase (S)trength, (I)ntelligence, or (D)exterity? <lightgrey>" prog
           = ([], press "s" >> prog)
         handleMessage message prog = (,) [] $ case view prog of

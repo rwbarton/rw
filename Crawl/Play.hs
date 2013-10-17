@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Crawl.Play (
   play
@@ -6,7 +6,7 @@ module Crawl.Play (
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forever, guard, msum, mplus)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
@@ -18,6 +18,7 @@ import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
+import qualified Data.Map as M
 import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
@@ -26,6 +27,7 @@ import qualified Data.Text.IO as T
 import Crawl.BananaUtils
 import Crawl.Bindings
 import Crawl.Explore
+import Crawl.Inventory
 import Crawl.LevelMap
 import Crawl.Move
 
@@ -76,6 +78,8 @@ setupNetwork recvHandler sendHandler = do
                          y <- msg ^? key "pos".key "y"._Integer.integral
                          return (Coord x y)) demultiplexed
 
+      inv = inventory $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
+
       hunger = R.stepper 4 $ filterBy (\msg -> do
                                           guard $ msg ^? key "msg" == Just "player"
                                           statuses <- msg ^? key "status"._Array
@@ -84,13 +88,19 @@ setupNetwork recvHandler sendHandler = do
         where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
                                 "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
 
+      eat = (\h i -> listToMaybe $ do
+                guard $ h < 4
+                (slot, itemType -> ItemFood _) <- M.toList i
+                return $ Eat slot
+                ) <$> hunger <*> inv
+
       monsters = monsterMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       adjacent = (\m (Coord x y) -> msum [ Just (Attack dx dy)
                                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
                                            let neighbor = Coord (x+dx) (y+dy),
                                            HS.member neighbor m ]) <$> monsters <*> loc
 
-      move = (\a e -> fromMaybe Rest $ msum [a, e]) <$> adjacent <*> (explore <$> level <*> loc)
+      move = (\a ea e -> fromMaybe Rest $ msum [a, ea, e]) <$> adjacent <*> eat <*> (explore <$> level <*> loc)
       goText = sendMoves move messages (R.whenE stillAlive inputModeChanged)
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
