@@ -2,6 +2,8 @@ module Crawl.Explore (
   explore, loot, descend
   ) where
 
+import Control.Monad (guard)
+
 import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
@@ -28,7 +30,7 @@ explore info loc = case pathfind isUnmapped True info loc of
   where isUnmapped target = not $ target `H.member` _levelMap info
 
 loot :: LevelInfo -> Coord -> Maybe Move
-loot info loc = case pathfind isLoot False info loc of
+loot info loc = guard (not $ HS.null (_levelLoot info)) >> case pathfind isLoot False info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
   where isLoot target = target `HS.member` _levelLoot info
