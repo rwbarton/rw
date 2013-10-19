@@ -4,8 +4,9 @@ module Crawl.LevelInfo where
 
 import Control.Monad (mplus, when)
 import Control.Monad.Trans.State (execState, put)
+import Data.Bits (testBit)
 import qualified Data.Foldable as F
-import Control.Lens ((^?), (^..), (.=), (%~), _1, traverse, at, enum, contains)
+import Control.Lens ((^?), (^..), (.=), (%~), _1, traverse, at, enum, contains, to)
 import Control.Lens.TH (makeLenses)
 import Numeric.Lens (integral)
 import Control.Lens.Aeson (_Bool, _Array, _Integer, key)
@@ -24,22 +25,24 @@ instance H.Hashable Coord where
   hash (Coord x y) = x + 100 * y
 
 data LevelInfo = LevelInfo {
-  _levelMap :: H.HashMap Coord MapCell,
-  _levelMonsters :: HS.HashSet Coord
+  _levelMap :: !(H.HashMap Coord MapCell),
+  _levelMonsters :: !(HS.HashSet Coord),
+  _levelLoot :: !(HS.HashSet Coord)
   }
 
 makeLenses ''LevelInfo
 
 emptyLevel :: LevelInfo
-emptyLevel = LevelInfo H.empty HS.empty
+emptyLevel = LevelInfo H.empty HS.empty HS.empty
 
 levelInfo :: R.Event t A.Value -> R.Behavior t LevelInfo
 levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
   where updateLevel msg = when (msg ^? key "clear"._Bool == Just True) (put emptyLevel) >> mapM_ updateCell cellMsgs
           where cellMsgs = withCoordinates $ msg ^.. key "cells"._Array.traverse
                 updateCell (coord, cellMsg) = do
-                  F.mapM_ ((levelMap.at coord .=) . Just) (cellMsg ^? key "f"._Integer.integral.enum)
-                  F.mapM_ ((levelMonsters.contains coord .=) . (/= A.Null)) (cellMsg ^? key "mon")
+                  F.mapM_ (levelMap.at coord .=) (cellMsg ^? key "f"._Integer.integral.enum.to Just)
+                  F.mapM_ (levelMonsters.contains coord .=) (cellMsg ^? key "mon".to (/= A.Null))
+                  F.mapM_ (levelLoot.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.to (`testBit` 20))
 
 withCoordinates :: [A.Value] -> [(Coord, A.Value)]
 withCoordinates vs = map (_1 %~ (\(Just x, Just y) -> Coord x y)) $ scanl1 f $ map extractCoordinates vs
