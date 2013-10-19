@@ -11,7 +11,7 @@ import Data.Char (chr, ord)
 import Control.Monad.Trans.State (execState)
 import Data.Foldable (forM_)
 
-import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), at, non, (.=))
+import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=))
 import Control.Lens.Aeson (key, _Object, _Integer, _String)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
@@ -88,8 +88,14 @@ slotLetter (InventorySlot n)
 emptySlot :: Item
 emptySlot = Item 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)"
 
+emptyInventory :: Inventory
+emptyInventory = M.fromList [ (InventorySlot slot, emptySlot) | slot <- [0..51] ]
+
+dropEmptySlots :: Inventory -> Inventory
+dropEmptySlots = M.filter ((/= fromEnum OBJ_UNASSIGNED) . _base_type)
+
 inventory :: R.Event t A.Value -> R.Behavior t Inventory
-inventory input = R.accumB M.empty $ fmap updateInventory input
+inventory input = fmap dropEmptySlots $ R.accumB emptyInventory $ fmap updateInventory input
   where updateInventory msg = execState $ iforMOf_ (key "inv"._Object.itraversed) msg updateSlot
         updateSlot slotName item = do
           updateIntField "base_type" base_type
@@ -100,6 +106,6 @@ inventory input = R.accumB M.empty $ fmap updateInventory input
           updateIntField "flags" flags
           updateTextField "inscription" inscription
           updateTextField "name" name
-          where updateIntField s l = forM_ (item ^? key s._Integer.integral) $ \val -> at slot.non emptySlot.l .= val
-                updateTextField s l = forM_ (item ^? key s._String) $ \val -> at slot.non emptySlot.l .= val
+          where updateIntField s l = forM_ (item ^? key s._Integer.integral) $ \val -> ix slot.l .= val
+                updateTextField s l = forM_ (item ^? key s._String) $ \val -> ix slot.l .= val
                 slot = InventorySlot (read $ T.unpack slotName)
