@@ -17,7 +17,7 @@ source-repository head
 
 executable rw
   main-is:             Main.hs
-  ghc-options:         -Wall -fno-warn-unused-do-bind -O2 -funbox-strict-fields -rtsopts -with-rtsopts=-T
+  ghc-options:         -Wall -fno-warn-unused-do-bind -O2 -funbox-strict-fields -rtsopts -with-rtsopts=-T -fprof-auto
   build-depends:       base ==4.5.*,
                        aeson ==0.6.*,
                        astar ==0.2.*,
