@@ -100,7 +100,7 @@ setupNetwork recvHandler sendHandler = do
                                            let neighbor = Coord (x+dx) (y+dy),
                                            HS.member neighbor m ]) <$> monsters <*> loc
 
-      move = (\a ea e -> fromMaybe Rest $ msum [a, ea, e]) <$> adjacent <*> eat <*> (explore <$> level <*> loc)
+      move = (\a ea l e -> fromMaybe Rest $ msum [a, ea, l, e]) <$> adjacent <*> eat <*> (loot <$> level <*> loc) <*> (explore <$> level <*> loc)
       goText = sendMoves move messages (R.whenE stillAlive inputModeChanged)
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
