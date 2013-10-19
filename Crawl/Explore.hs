@@ -7,11 +7,11 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.Set as S
 
 import Crawl.Bindings
-import Crawl.LevelMap
+import Crawl.LevelInfo
 import Crawl.Move
 
-explore :: LevelMap -> Coord -> Maybe Move
-explore level loc = case aStar adj cost bound isUnmapped loc of
+explore :: LevelInfo -> Coord -> Maybe Move
+explore info loc = case aStar adj cost bound isUnmapped loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
   where adj (Coord x y) = S.fromList [ target
@@ -21,6 +21,7 @@ explore level loc = case aStar adj cost bound isUnmapped loc of
         cost _ target = movementCost (level H.! target)
         bound _ = 0
         isUnmapped target = not $ target `H.member` level
+        level = _levelMap info
 
 moveTo :: Coord -> Coord -> Move
 moveTo (Coord sx sy) (Coord tx ty) = Go (tx - sx) (ty - sy)

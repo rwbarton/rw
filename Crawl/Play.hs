@@ -28,7 +28,7 @@ import Crawl.BananaUtils
 import Crawl.Bindings
 import Crawl.Explore
 import Crawl.Inventory
-import Crawl.LevelMap
+import Crawl.LevelInfo
 import Crawl.Move
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
@@ -70,7 +70,7 @@ setupNetwork recvHandler sendHandler = do
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
 
-      level = levelMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
+      level = levelInfo $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       loc = R.stepper (Coord 0 0) $
             filterBy (\msg -> do
                          guard  $ msg ^? key "msg" == Just "player"
@@ -94,7 +94,7 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> hunger <*> inv
 
-      monsters = monsterMap $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
+      monsters = fmap _levelMonsters level
       adjacent = (\m (Coord x y) -> msum [ Just (Attack dx dy)
                                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
                                            let neighbor = Coord (x+dx) (y+dy),
