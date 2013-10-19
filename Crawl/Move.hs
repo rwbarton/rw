@@ -15,6 +15,7 @@ import Crawl.Inventory
 
 data Move = Go !Int !Int
           | Attack !Int !Int
+          | GoDown
           | Rest
           | Eat InventorySlot
 
@@ -53,6 +54,7 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   (-1,  1) -> "\2"
   ( 1,  1) -> "\14"
   _        -> error "tried to make illegal attack"
+moveProgram GoDown = press ">"
 moveProgram Rest = press "."
 moveProgram (Eat slot) = do
   press "e"
