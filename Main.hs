@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Control.Applicative ((<$>))
@@ -9,6 +11,7 @@ import System.IO (hPutStrLn, stderr,
                   openFile, IOMode(WriteMode), hFlush)
 
 import Control.Concurrent.Chan.Split (OutChan, dupChan, readChan)
+import System.Remote.Monitoring (forkServer)
 import Text.Groom (groom)
 
 import Crawl.AccountInfo
@@ -38,6 +41,7 @@ connectAndPlay config = do
 
 main :: IO ()
 main = do
+  forkServer "localhost" 8000
   args <- getArgs
   case args of
     [configFile] -> do
