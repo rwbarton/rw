@@ -21,3 +21,5 @@ module Crawl.Bindings where
 {# enum misc_item_type as MiscellanyType {} deriving (Eq, Ord) #}
 {# enum corpse_type as CorpseType {} deriving (Eq, Ord) #}
 {# enum rod_type as RodType {} deriving (Eq, Ord) #}
+
+{# enum monster_type as MonsterType {} #}

@@ -17,7 +17,6 @@ import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
-import qualified Data.HashSet as HS
 import qualified Data.Map as M
 import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
@@ -94,14 +93,8 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> hunger <*> inv
 
-      monsters = fmap _levelMonsters level
-      adjacent = (\m (Coord x y) -> msum [ Just (Attack dx dy)
-                                         | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
-                                           let neighbor = Coord (x+dx) (y+dy),
-                                           HS.member neighbor m ]) <$> monsters <*> loc
-
-      move = (\a ea l e d -> fromMaybe Rest $ msum [a, ea, l, e, d]) <$>
-             adjacent <*> eat <*> (loot <$> level <*> loc) <*> (explore <$> level <*> loc) <*> (descend <$> level <*> loc)
+      move = (\k ea l e d -> fromMaybe Rest $ msum [k, ea, l, e, d]) <$>
+             (kill <$> level <*> loc) <*> eat <*> (loot <$> level <*> loc) <*> (explore <$> level <*> loc) <*> (descend <$> level <*> loc)
       goText = sendMoves move messages (R.whenE stillAlive inputModeChanged)
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye

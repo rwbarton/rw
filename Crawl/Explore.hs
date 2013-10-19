@@ -1,5 +1,5 @@
 module Crawl.Explore (
-  explore, loot, descend
+  kill, explore, loot, descend
   ) where
 
 import Control.Monad (guard)
@@ -22,6 +22,20 @@ pathfind isGoal moveThroughUnknown info loc = aStar adj cost bound isGoal loc
         cost _ target = movementCost (level H.! target)
         bound _ = 0
         level = _levelMap info
+
+kill :: LevelInfo -> Coord -> Maybe Move
+kill info loc = guard (not . null $ filter isRealMonster $ H.elems (_levelMonsters info)) >> case pathfind isMonster False info loc of
+  Just [loc'] -> Just (attackTo loc loc')
+  Just (loc' : _) -> Just (moveTo loc loc')
+  _ -> Nothing
+  where isMonster target = case H.lookup target (_levelMonsters info) of
+          Just ty | isRealMonster ty -> True
+          _ -> False
+        isRealMonster ty = case _monsterType ty of
+          MONS_FUNGUS -> False
+          MONS_PLANT -> False
+          MONS_BUSH -> False
+          _ -> True
 
 explore :: LevelInfo -> Coord -> Maybe Move
 explore info loc = case pathfind isUnmapped True info loc of
@@ -50,6 +64,9 @@ descend info loc = case pathfind (\coord -> fmap isDownStair (H.lookup coord (_l
 
 moveTo :: Coord -> Coord -> Move
 moveTo (Coord sx sy) (Coord tx ty) = Go (tx - sx) (ty - sy)
+
+attackTo :: Coord -> Coord -> Move
+attackTo (Coord sx sy) (Coord tx ty) = Attack (tx - sx) (ty - sy)
 
 isPassable :: Feature -> Bool
 isPassable feat | DNGN_MANGROVE <= feat && feat <= DNGN_DEEP_WATER = False

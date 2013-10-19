@@ -22,14 +22,14 @@ import Crawl.Bindings
 
 type MapCell = Feature
 
-data Coord = Coord !Int !Int deriving (Eq, Ord, Show)
+data Coord = Coord !Int !Int deriving (Eq, Ord)
 instance H.Hashable Coord where
   hash (Coord x y) = x + 100 * y
 
 -- Want these to be strict, but how to catch uninitialized fields then?
 data Monster = Monster {
-  _monsterType :: Int
-  } deriving Show
+  _monsterType :: MonsterType
+  }
 
 makeLenses ''Monster
 
@@ -68,7 +68,7 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                                             (maybe (return Nothing) (\mid -> use (levelMonsterTable.at mid)) monsterID)
                                             (use (levelMonsters.at coord))
                               let newMonster = (`execState` oldMonster) $ do
-                                    F.mapM_ (monsterType .=) (monsterData ^? key "type"._Integer.integral)
+                                    F.mapM_ (monsterType .=) (monsterData ^? key "type"._Integer.integral.enum)
                               levelMonsters.at coord .= Just newMonster
                               F.forM_ monsterID $ \mid -> levelMonsterTable.at mid .= Just newMonster
 
