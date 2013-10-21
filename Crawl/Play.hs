@@ -79,6 +79,14 @@ setupNetwork recvHandler sendHandler = do
 
       inv = inventory $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
 
+      hp = R.stepper 0 $ filterBy (\msg -> do
+                                      guard $ msg ^? key "msg" == Just "player"
+                                      msg ^? key "hp"._Integer) demultiplexed
+      mhp = R.stepper 0 $ filterBy (\msg -> do
+                                       guard $ msg ^? key "msg" == Just "player"
+                                       msg ^? key "hp_max"._Integer) demultiplexed
+      needRest = (<) <$> hp <*> mhp
+
       hunger = R.stepper 4 $ filterBy (\msg -> do
                                           guard $ msg ^? key "msg" == Just "player"
                                           statuses <- msg ^? key "status"._Array
@@ -93,8 +101,8 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> hunger <*> inv
 
-      move = (\k ea l e d -> fromMaybe Rest $ msum [k, ea, l, e, d]) <$>
-             (kill <$> level <*> loc) <*> eat <*> (loot <$> level <*> loc) <*> (explore <$> level <*> loc) <*> (descend <$> level <*> loc)
+      move = (\k ea r l e d -> fromMaybe Rest $ msum [k, ea, guard r >> Just Rest, l, e, d]) <$>
+             (kill <$> level <*> loc) <*> eat <*> needRest <*> (loot <$> level <*> loc) <*> (explore <$> level <*> loc) <*> (descend <$> level <*> loc)
       goText = sendMoves move messages (R.whenE stillAlive inputModeChanged)
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
