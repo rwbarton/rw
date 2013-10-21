@@ -22,10 +22,17 @@ pathfind goals info loc@(Coord lx ly) = fmap (tail . reverse . map unC) $ aStar 
                                            maybe False isPassable (H.lookup target level) ]
         cost _ START = error "pathfind: START unreachable"
         cost _ (C target) = maybe 0 movementCost (H.lookup target level)
+                            + maybe 0 (plantPenalty . _monsterType) (H.lookup target $ _levelMonsters info)
         bound START = 0
         bound (C (Coord x y)) = max (abs (x-lx)) (abs (y-ly))
         isGoal = (== C loc)
         level = _levelMap info
+
+plantPenalty :: MonsterType -> Int
+plantPenalty MONS_FUNGUS = 5
+plantPenalty MONS_PLANT = 20
+plantPenalty MONS_BUSH = 80
+plantPenalty _ = 0
 
 kill :: LevelInfo -> Coord -> Maybe Move
 kill info loc = case pathfind (HS.fromList $ H.keys $ H.filter isRealMonster (_levelMonsters info)) info loc of
@@ -72,4 +79,8 @@ isPassable feat | DNGN_MANGROVE <= feat && feat <= DNGN_DEEP_WATER = False
 isPassable _ = True
 
 movementCost :: Feature -> Int
+movementCost DNGN_TRAP_MAGICAL = 10000
+movementCost DNGN_RUNED_DOOR = 10000
+movementCost DNGN_CLOSED_DOOR = 2
+movementCost DNGN_SHALLOW_WATER = 2
 movementCost _ = 1
