@@ -69,6 +69,10 @@ setupNetwork recvHandler sendHandler = do
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
 
+      time = R.stepper 0 $ filterBy (\msg -> do
+                                        guard $ msg ^? key "msg" == Just "player"
+                                        msg ^? key "time"._Integer) demultiplexed
+
       level = levelInfo $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       loc = R.stepper (Coord 0 0) $
             filterBy (\msg -> do
@@ -86,6 +90,11 @@ setupNetwork recvHandler sendHandler = do
                                        guard $ msg ^? key "msg" == Just "player"
                                        msg ^? key "hp_max"._Integer) demultiplexed
       needRest = (<) <$> hp <*> mhp
+      rest = (\nr lm t -> if nr
+                          then case lm of
+                            (t', LongRest) | t' == t -> Just Rest
+                            _ -> Just LongRest
+                          else Nothing) <$> needRest <*> lastMove <*> time
 
       hunger = R.stepper 4 $ filterBy (\msg -> do
                                           guard $ msg ^? key "msg" == Just "player"
@@ -101,9 +110,16 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> hunger <*> inv
 
-      move = (\k ea r l e d -> fromMaybe Rest $ msum [k, ea, guard r >> Just Rest, l, e, d]) <$>
-             (kill <$> level <*> loc) <*> eat <*> needRest <*> (loot <$> level <*> loc) <*> (explore <$> level <*> loc) <*> (descend <$> level <*> loc)
-      goText = sendMoves move messages (R.whenE stillAlive inputModeChanged)
+      explore' = (\ll l lm t -> case explore ll l of
+                     Nothing -> Nothing
+                     Just e -> case lm of
+                       (t', AutoExplore) | t' == t -> Just e
+                       _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> time
+
+      move = (\k ea r l e d -> fromMaybe Rest $ msum [k, ea, r, l, e, d]) <$>
+             (kill <$> level <*> loc) <*> eat <*> rest <*> (loot <$> level <*> loc) <*> explore' <*> (descend <$> level <*> loc)
+      (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
+      lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> time R.<@> moves
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
 
