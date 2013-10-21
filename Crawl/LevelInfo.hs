@@ -38,6 +38,7 @@ uninitializedMonster = Monster (error "used uninitializedMonster monsterType!")
 
 data LevelInfo = LevelInfo {
   _levelMap :: !(H.HashMap Coord MapCell),
+  _levelFringe :: !(HS.HashSet Coord),
   _levelMonsters :: !(H.HashMap Coord Monster),
   _levelMonsterTable :: !(H.HashMap Int Monster),
   _levelLoot :: !(HS.HashSet Coord)
@@ -46,14 +47,25 @@ data LevelInfo = LevelInfo {
 makeLenses ''LevelInfo
 
 emptyLevel :: LevelInfo
-emptyLevel = LevelInfo H.empty H.empty H.empty HS.empty
+emptyLevel = LevelInfo H.empty HS.empty H.empty H.empty HS.empty
 
 levelInfo :: R.Event t A.Value -> R.Behavior t LevelInfo
 levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
   where updateLevel msg = when (msg ^? key "clear"._Bool == Just True) (put emptyLevel) >> mapM_ updateCell cellMsgs
           where cellMsgs = withCoordinates $ msg ^.. key "cells"._Array.traverse
                 updateCell (coord, cellMsg) = do
-                  F.mapM_ (levelMap.at coord .=) (cellMsg ^? key "f"._Integer.integral.enum.to Just)
+                  F.mapM_ (\feat -> do
+                              when (feat == DNGN_UNSEEN) (error "server set dungeon feature to DNGN_UNSEEN")
+                              oldLevel <- use levelMap
+                              levelMap.at coord .= Just feat
+                              level <- use levelMap
+                              let updateFringe c@(Coord x y) =
+                                    levelFringe.contains c .=
+                                    (not (c `H.member` level)
+                                     && any (`H.member` level) [ Coord (x+dx) (y+dy) | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0) ])
+                              when (not $ coord `H.member` oldLevel) $ do -- neighboring area needs update
+                                mapM_ updateFringe [ Coord (x+dx) (y+dy) | let Coord x y = coord, dx <- [-1,0,1], dy <- [-1,0,1] ])
+                    (cellMsg ^? key "f"._Integer.integral.enum)
                   F.mapM_ updateMonster (cellMsg ^? key "mon")
                   F.mapM_ (levelLoot.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.to (`testBit` 20))
                   where updateMonster monsterData =
