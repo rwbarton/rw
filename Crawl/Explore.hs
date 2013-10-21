@@ -2,8 +2,6 @@ module Crawl.Explore (
   kill, explore, loot, descend
   ) where
 
-import Control.Monad (guard)
-
 import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
@@ -13,44 +11,45 @@ import Crawl.Bindings
 import Crawl.LevelInfo
 import Crawl.Move
 
-pathfind :: (Coord -> Bool) -> Bool -> LevelInfo -> Coord -> Maybe [Coord]
-pathfind isGoal moveThroughUnknown info loc = aStar adj cost bound isGoal loc
-  where adj (Coord x y) = S.fromList [ target
-                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
-                            let target = Coord (x+dx) (y+dy),
-                            maybe moveThroughUnknown isPassable (H.lookup target level) ]
-        cost _ target = movementCost (level H.! target)
-        bound _ = 0
+data V = START | C { unC :: !Coord } deriving (Eq, Ord)
+
+pathfind :: HS.HashSet Coord -> LevelInfo -> Coord -> Maybe [Coord]
+pathfind goals info loc@(Coord lx ly) = fmap (tail . reverse . map unC) $ aStar adj cost bound isGoal START
+  where adj START = S.fromList $ map C $ HS.toList goals
+        adj (C (Coord x y)) = S.fromList [ C target
+                                         | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
+                                           let target = Coord (x+dx) (y+dy),
+                                           maybe False isPassable (H.lookup target level) ]
+        cost _ START = error "pathfind: START unreachable"
+        cost _ (C target) = maybe 0 movementCost (H.lookup target level)
+        bound START = 0
+        bound (C (Coord x y)) = max (abs (x-lx)) (abs (y-ly))
+        isGoal = (== C loc)
         level = _levelMap info
 
 kill :: LevelInfo -> Coord -> Maybe Move
-kill info loc = guard (not . null $ filter isRealMonster $ H.elems (_levelMonsters info)) >> case pathfind isMonster False info loc of
+kill info loc = case pathfind (HS.fromList $ H.keys $ H.filter isRealMonster (_levelMonsters info)) info loc of
   Just [loc'] -> Just (attackTo loc loc')
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
-  where isMonster target = case H.lookup target (_levelMonsters info) of
-          Just ty | isRealMonster ty -> True
-          _ -> False
-        isRealMonster ty = case _monsterType ty of
+  where isRealMonster ty = case _monsterType ty of
           MONS_FUNGUS -> False
           MONS_PLANT -> False
           MONS_BUSH -> False
           _ -> True
 
 explore :: LevelInfo -> Coord -> Maybe Move
-explore info loc = case pathfind isUnmapped True info loc of
+explore info loc = case pathfind (_levelFringe info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
-  where isUnmapped target = not $ target `H.member` _levelMap info
 
 loot :: LevelInfo -> Coord -> Maybe Move
-loot info loc = guard (not $ HS.null (_levelLoot info)) >> case pathfind isLoot False info loc of
+loot info loc = case pathfind (_levelLoot info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
-  where isLoot target = target `HS.member` _levelLoot info
 
 descend :: LevelInfo -> Coord -> Maybe Move
-descend info loc = case pathfind (\coord -> fmap isDownStair (H.lookup coord (_levelMap info)) == Just True) False info loc of
+descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_levelMap info)) info loc of
   Just [] -> Just GoDown
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
