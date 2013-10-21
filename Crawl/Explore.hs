@@ -51,9 +51,10 @@ explore info loc = case pathfind (_levelFringe info) info loc of
   _ -> Nothing
 
 loot :: LevelInfo -> Coord -> Maybe Move
-loot info loc = case pathfind (_levelLoot info) info loc of
+loot info loc = case pathfind (HS.filter (not . isTeleTrap . (_levelMap info H.!)) $ _levelLoot info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
+  where isTeleTrap = (== DNGN_TRAP_MAGICAL) -- Not really, but the best we can do for now
 
 descend :: LevelInfo -> Coord -> Maybe Move
 descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_levelMap info)) info loc of
