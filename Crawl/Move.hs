@@ -20,6 +20,7 @@ data Move = Go !Int !Int
           | Rest
           | LongRest
           | AutoExplore
+          | Pray
           | Eat InventorySlot
 
 
@@ -61,6 +62,7 @@ moveProgram GoDown = press ">"
 moveProgram Rest = press "."
 moveProgram LongRest = press "5"
 moveProgram AutoExplore = press "o"
+moveProgram Pray = press "p"
 moveProgram (Eat slot) = do
   press "e"
   expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"

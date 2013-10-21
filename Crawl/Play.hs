@@ -17,6 +17,7 @@ import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import qualified Data.Map as M
 import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
@@ -110,14 +111,19 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> hunger <*> inv
 
+      corpses = R.accumB HS.empty $
+                ((\l message -> if "☠" `T.isInfixOf` message then HS.insert l else id) <$> loc R.<@> messages) `R.union`
+                ((\l m -> case m of { Pray -> HS.delete l; _ -> id }) <$> loc R.<@> moves)
+      sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
+
       explore' = (\ll l lm t -> case explore ll l of
                      Nothing -> Nothing
                      Just e -> case lm of
                        (t', AutoExplore) | t' == t -> Just e
                        _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> time
 
-      move = (\k ea r l e d -> fromMaybe Rest $ msum [k, ea, r, l, e, d]) <$>
-             (kill <$> level <*> loc) <*> eat <*> rest <*> (loot <$> level <*> loc) <*> explore' <*> (descend <$> level <*> loc)
+      move = (\k ea s r l e d -> fromMaybe Rest $ msum [k, ea, s, r, l, e, d]) <$>
+             (kill <$> level <*> loc) <*> eat <*> sac <*> rest <*> (loot <$> level <*> loc) <*> explore' <*> (descend <$> level <*> loc)
       (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
       lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> time R.<@> moves
       clearText = fmap (const " ") inventoryMore `R.union`
