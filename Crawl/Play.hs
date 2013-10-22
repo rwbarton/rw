@@ -96,7 +96,8 @@ setupNetwork recvHandler sendHandler = do
                 ) <$> player <*> inv
 
       corpses = R.accumB HS.empty $
-                ((\l message -> if "☠" `T.isInfixOf` message then HS.insert l else id) <$> loc R.<@> messages) `R.union`
+                ((\l message -> if "☠" `T.isInfixOf` message || "Items here: " `T.isInfixOf` message && "%" `T.isInfixOf` message
+                                then HS.insert l else id) <$> loc R.<@> messages) `R.union`
                 ((\l m -> case m of { Pray -> HS.delete l; _ -> id }) <$> loc R.<@> moves)
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
 
