@@ -5,13 +5,12 @@ module Crawl.Play (
   ) where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forever, guard, msum, mplus)
+import Control.Monad (forever, guard, msum)
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.List (elemIndex)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
-import Control.Lens ((^..), (^?), at, to, traverse, folding, enum)
+import Control.Lens ((^..), (^?), at, to, traverse, enum)
 import Control.Lens.Aeson (_Integer, _String, _Array, key)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
@@ -30,6 +29,7 @@ import Crawl.Explore
 import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Move
+import Crawl.Status
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
 play recvChan sendChan = do
@@ -70,9 +70,7 @@ setupNetwork recvHandler sendHandler = do
 
       gameOver = R.filterE (\msg -> msg ^? key "msg" == Just "game_ended") demultiplexed
 
-      time = R.stepper 0 $ filterBy (\msg -> do
-                                        guard $ msg ^? key "msg" == Just "player"
-                                        msg ^? key "time"._Integer) demultiplexed
+      player = playerStatus $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
 
       level = levelInfo $ R.filterE (\msg -> msg ^? key "msg" == Just "map") demultiplexed
       loc = R.stepper (Coord 0 0) $
@@ -84,32 +82,18 @@ setupNetwork recvHandler sendHandler = do
 
       inv = inventory $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
 
-      hp = R.stepper 0 $ filterBy (\msg -> do
-                                      guard $ msg ^? key "msg" == Just "player"
-                                      msg ^? key "hp"._Integer) demultiplexed
-      mhp = R.stepper 0 $ filterBy (\msg -> do
-                                       guard $ msg ^? key "msg" == Just "player"
-                                       msg ^? key "hp_max"._Integer) demultiplexed
-      needRest = (<) <$> hp <*> mhp
+      needRest = (\p -> _hp p < _mhp p) <$> player
       rest = (\nr lm t -> if nr
                           then case lm of
                             (t', LongRest) | t' == t -> Just Rest
                             _ -> Just LongRest
-                          else Nothing) <$> needRest <*> lastMove <*> time
+                          else Nothing) <$> needRest <*> lastMove <*> (_time <$> player)
 
-      hunger = R.stepper 4 $ filterBy (\msg -> do
-                                          guard $ msg ^? key "msg" == Just "player"
-                                          statuses <- msg ^? key "status"._Array
-                                          (statuses ^? traverse.key "light".folding (`elemIndex` hungerStatuses)) `mplus` return 4
-                                      ) demultiplexed
-        where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
-                                "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
-
-      eat = (\h i -> listToMaybe $ do
-                guard $ h < 4
+      eat = (\p i -> listToMaybe $ do
+                guard $ hungerLevel p < 4
                 (slot, itemType -> ItemFood _) <- M.toList i
                 return $ Eat slot
-                ) <$> hunger <*> inv
+                ) <$> player <*> inv
 
       corpses = R.accumB HS.empty $
                 ((\l message -> if "☠" `T.isInfixOf` message then HS.insert l else id) <$> loc R.<@> messages) `R.union`
@@ -120,12 +104,12 @@ setupNetwork recvHandler sendHandler = do
                      Nothing -> Nothing
                      Just e -> case lm of
                        (t', AutoExplore) | t' == t -> Just e
-                       _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> time
+                       _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
 
       move = (\k ea s r l e d -> fromMaybe Rest $ msum [k, ea, s, r, l, e, d]) <$>
              (kill <$> level <*> loc) <*> eat <*> sac <*> rest <*> (loot <$> level <*> loc) <*> explore' <*> (descend <$> level <*> loc)
       (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
-      lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> time R.<@> moves
+      lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> (_time <$> player) R.<@> moves
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye
 
