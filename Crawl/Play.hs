@@ -4,8 +4,8 @@ module Crawl.Play (
   play
   ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forever, guard, msum)
+import Control.Applicative ((<$>), (<*>), liftA2)
+import Control.Monad (forever, guard)
 import Data.Maybe (fromMaybe, listToMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
@@ -107,8 +107,15 @@ setupNetwork recvHandler sendHandler = do
                        (t', AutoExplore) | t' == t -> Just e
                        _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
 
-      move = (\k ea s r l e d -> fromMaybe Rest $ msum [k, ea, s, r, l, e, d]) <$>
-             (kill <$> level <*> loc) <*> eat <*> sac <*> rest <*> (loot <$> level <*> loc) <*> explore' <*> (descend <$> level <*> loc)
+      move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) [
+        kill <$> level <*> loc,
+        eat,
+        sac,
+        rest,
+        loot <$> level <*> loc,
+        explore',
+        descend <$> level <*> loc
+        ]
       (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
       lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> (_time <$> player) R.<@> moves
       clearText = fmap (const " ") inventoryMore `R.union`
