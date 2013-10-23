@@ -10,6 +10,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Foldable as F
 import Control.Lens ((^?), (^..), (.=), (%~), _1, traverse, at, enum, contains, to, use)
 import Control.Lens.TH (makeLenses)
+import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import Control.Lens.Aeson (_Bool, _Array, _Integer, key)
 import qualified Data.Aeson as A
@@ -39,6 +40,7 @@ uninitializedMonster = Monster (error "used uninitializedMonster monsterType!")
 data LevelInfo = LevelInfo {
   _levelMap :: !(H.HashMap Coord MapCell),
   _levelFringe :: !(HS.HashSet Coord),
+  _levelLOS :: !(HS.HashSet Coord),
   _levelMonsters :: !(H.HashMap Coord Monster),
   _levelMonsterTable :: !(H.HashMap Int Monster),
   _levelLoot :: !(HS.HashSet Coord)
@@ -47,7 +49,7 @@ data LevelInfo = LevelInfo {
 makeLenses ''LevelInfo
 
 emptyLevel :: LevelInfo
-emptyLevel = LevelInfo H.empty HS.empty H.empty H.empty HS.empty
+emptyLevel = LevelInfo H.empty HS.empty HS.empty H.empty H.empty HS.empty
 
 levelInfo :: R.Event t A.Value -> R.Behavior t LevelInfo
 levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
@@ -66,6 +68,7 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                               when (not $ coord `H.member` oldLevel) $ do -- neighboring area needs update
                                 mapM_ updateFringe [ Coord (x+dx) (y+dy) | let Coord x y = coord, dx <- [-1,0,1], dy <- [-1,0,1] ])
                     (cellMsg ^? key "f"._Integer.integral.enum)
+                  F.mapM_ (levelLOS.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.bitAt 18.to not)
                   F.mapM_ updateMonster (cellMsg ^? key "mon")
                   F.mapM_ (levelLoot.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.to (`testBit` 20))
                   where updateMonster monsterData =
