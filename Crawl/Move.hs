@@ -23,6 +23,7 @@ data Move = Go !Int !Int
           | AutoExplore
           | Pray
           | Eat InventorySlot
+          | ScanItem !Int !Int
 
 
 data SendOp a where
@@ -68,6 +69,15 @@ moveProgram (Eat slot) = do
   press "e"
   expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
   press (T.singleton $ slotLetter slot)
+moveProgram (ScanItem dx dy) = do
+  -- todo: send this all in a single message
+  press "x"
+  let go 0 0 = return ()
+      go rx ry = moveProgram (Go sx sy) >> go (rx - sx) (ry - sy)
+        where sx = signum rx
+              sy = signum ry
+  go dx dy
+  press "\ESC"
 
 sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> (R.Event t Move, R.Event t T.Text)
 sendMoves move messages inputModeChanged = R.split $ R.spill . fst $

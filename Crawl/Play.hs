@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import Crawl.BananaUtils
 import Crawl.Bindings
 import Crawl.Explore
+import Crawl.FloorItems
 import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Messages
@@ -80,6 +81,13 @@ setupNetwork recvHandler sendHandler = do
                          y <- msg ^? key "pos".key "y"._Integer.integral
                          return (Coord x y)) demultiplexed
 
+      cursor = R.stepper (Coord 0 0) $
+               filterBy (\msg -> do
+                            guard  $ msg ^? key "msg" == Just "cursor"
+                            x <- msg ^? key "loc".key "x"._Integer.integral
+                            y <- msg ^? key "loc".key "y"._Integer.integral
+                            return (Coord x y)) demultiplexed
+
       inv = inventory $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
 
       needRest = (\p -> _hp p < _mhp p) <$> player
@@ -95,28 +103,23 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> player <*> inv
 
-      corpses = R.accumB HS.empty $
-                ((\l message -> if "☠" `T.isInfixOf` _msgText message || "Items here: " `T.isInfixOf` _msgText message && "%" `T.isInfixOf` _msgText message
-                                then HS.insert l else id) <$> loc R.<@> messages) `R.union`
-                ((\l m -> case m of { Pray -> HS.delete l; _ -> id }) <$> loc R.<@> moves)
-      sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
+      floorItems = trackFloorItems cursor level inputModeB messages loc moves
 
-      explore' = (\ll l lm t -> case explore ll l of
-                     Nothing -> Nothing
-                     Just e -> case lm of
-                       (t', AutoExplore) | t' == t -> Just e
-                       _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
+      corpses = fmap (HS.fromList . H.keys . H.filter (maybe False sacrificable . snd)) floorItems
+      sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
+      -- 'loot' is responsible for getting us to the corpse
 
       move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) [
+        scanFloorItems <$> level <*> loc <*> floorItems,
         kill <$> level <*> loc,
         eat,
         sac,
         rest,
-        loot <$> level <*> loc,
-        explore',
+        loot <$> level <*> loc <*> floorItems,
+        explore <$> level <*> loc,
         descend <$> level <*> loc
         ]
-      (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
+      (moves, goText) = sendMoves move (R.whenE (fmap (/= MOUSE_MODE_TARGET) inputModeB) messages) (R.whenE stillAlive inputModeChanged)
       lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> (_time <$> player) R.<@> moves
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye

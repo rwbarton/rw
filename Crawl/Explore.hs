@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Crawl.Explore (
   kill, explore, loot, descend
   ) where
@@ -6,8 +8,10 @@ import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
 import qualified Data.Set as S
+import qualified Data.Text as T
 
 import Crawl.Bindings
+import Crawl.FloorItems
 import Crawl.LevelInfo
 import Crawl.Move
 
@@ -50,9 +54,10 @@ explore info loc = case pathfind (_levelFringe info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
 
-loot :: LevelInfo -> Coord -> Maybe Move
-loot info loc = case pathfind (HS.filter (not . isTeleTrap . (_levelMap info H.!)) $ _levelLoot info) info loc of
-  Just (loc' : _) -> Just (moveTo loc loc')
+loot :: LevelInfo -> Coord -> H.HashMap Coord (Maybe Int, Maybe T.Text) -> Maybe Move
+loot info loc items = case pathfind (HS.fromList $ H.keys $ H.filter (maybe False wantItem . snd) items) info loc of
+  Just locs@(loc' : _)
+    | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')
   _ -> Nothing
   where isTeleTrap = (== DNGN_TRAP_MAGICAL) -- Not really, but the best we can do for now
 

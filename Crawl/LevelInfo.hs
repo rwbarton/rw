@@ -5,18 +5,18 @@ module Crawl.LevelInfo where
 import Control.Applicative (liftA2)
 import Control.Monad (mplus, when)
 import Control.Monad.Trans.State (execState, put)
-import Data.Bits (testBit)
 import Data.Maybe (fromMaybe)
 import qualified Data.Foldable as F
 import Control.Lens ((^?), (^..), (.=), (%~), _1, traverse, at, enum, contains, to, use)
 import Control.Lens.TH (makeLenses)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
-import Control.Lens.Aeson (_Bool, _Array, _Integer, key)
+import Control.Lens.Aeson (_Bool, _Array, _Integer, _String, key)
 import qualified Data.Aeson as A
 import qualified Data.Hashable as H
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
+import qualified Data.Text as T
 import qualified Reactive.Banana as R
 
 import Crawl.Bindings
@@ -43,13 +43,13 @@ data LevelInfo = LevelInfo {
   _levelLOS :: !(HS.HashSet Coord),
   _levelMonsters :: !(H.HashMap Coord Monster),
   _levelMonsterTable :: !(H.HashMap Int Monster),
-  _levelLoot :: !(HS.HashSet Coord)
+  _levelItemTiles :: !(H.HashMap Coord Int) -- todo: use an enum?
   }
 
 makeLenses ''LevelInfo
 
 emptyLevel :: LevelInfo
-emptyLevel = LevelInfo H.empty HS.empty HS.empty H.empty H.empty HS.empty
+emptyLevel = LevelInfo H.empty HS.empty HS.empty H.empty H.empty H.empty
 
 levelInfo :: R.Event t A.Value -> R.Behavior t LevelInfo
 levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
@@ -70,7 +70,18 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                     (cellMsg ^? key "f"._Integer.integral.enum)
                   F.mapM_ (levelLOS.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.bitAt 18.to not)
                   F.mapM_ updateMonster (cellMsg ^? key "mon")
-                  F.mapM_ (levelLoot.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.to (`testBit` 20))
+
+                  -- Update last seen item tile on this square, or remove if no item.
+                  -- First decide whether the square has an item, doesn't have an item,
+                  -- or has a monster so that we can't tell (then don't update).
+                  -- It would probably be better to do this based on tile data
+                  -- (can see under clouds, for instance) but tiles are confusing.
+                  case cellMsg ^? key "g"._String of
+                    Just g | g `T.isInfixOf` ".'" -> levelItemTiles.at coord .= Nothing
+                    Just g | g `T.isInfixOf` ")([/%?\"=!:|$" ->
+                      -- omitting {, } for now because disturbances/fountains share the glyphs
+                      levelItemTiles.at coord .= cellMsg ^? key "t".key "fg"._Integer.integral
+                    _ -> return ()
                   where updateMonster monsterData =
                           -- This crazy logic is intended to duplicate merge_monster
                           -- from webserver/game_data/static/map_knowledge.js
