@@ -2,9 +2,16 @@ module Crawl.Bindings where
 
 #include "enums.h"
 
-{# enum dungeon_feature_type as Feature {} deriving (Eq, Ord) #}
+-- Interface enums
 
 {# enum mouse_mode as MouseMode {} deriving (Eq, Show) #}
+
+{# enum msg_channel_type as MsgChannel {} deriving (Eq, Show) #}
+
+
+-- Gameplay enums
+
+{# enum dungeon_feature_type as Feature {} deriving (Eq, Ord) #}
 
 {# enum object_class_type as ItemBaseType {} deriving (Show) #}
 {# enum weapon_type as WeaponType {} deriving (Eq, Ord) #}

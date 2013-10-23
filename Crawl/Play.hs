@@ -21,13 +21,13 @@ import qualified Data.Map as M
 import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 
 import Crawl.BananaUtils
 import Crawl.Bindings
 import Crawl.Explore
 import Crawl.Inventory
 import Crawl.LevelInfo
+import Crawl.Messages
 import Crawl.Move
 import Crawl.Status
 
@@ -96,7 +96,7 @@ setupNetwork recvHandler sendHandler = do
                 ) <$> player <*> inv
 
       corpses = R.accumB HS.empty $
-                ((\l message -> if "☠" `T.isInfixOf` message || "Items here: " `T.isInfixOf` message && "%" `T.isInfixOf` message
+                ((\l message -> if "☠" `T.isInfixOf` _msgText message || "Items here: " `T.isInfixOf` _msgText message && "%" `T.isInfixOf` _msgText message
                                 then HS.insert l else id) <$> loc R.<@> messages) `R.union`
                 ((\l m -> case m of { Pray -> HS.delete l; _ -> id }) <$> loc R.<@> moves)
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
@@ -123,23 +123,13 @@ setupNetwork recvHandler sendHandler = do
 
       outputText = goText `R.union` clearText
       output = pong `R.union` fmap textInput outputText
-  R.reactimate $ fmap T.putStrLn messages
+  R.reactimate $ fmap print messages
   R.reactimate $ fmap print outputText
   R.reactimate $ fmap sendHandler output
   R.reactimate $ fmap (const $ exitWith ExitSuccess) gameOver
 
 demultiplex :: A.Object -> [A.Value]
 demultiplex msg = msg^..at "msgs".traverse._Array.traverse
-
--- XXX also have access to channel number, turn count
-messagesOf :: R.Event t A.Value -> R.Event t T.Text
-messagesOf input = R.spill $
-                   filterBy (\msg -> do
-                                guard $ msg ^? key "msg" == Just "msgs"
-                                let old_msgs = fromMaybe 0 $ msg ^? key "old_msgs"._Integer
-                                return $ drop (fromInteger old_msgs)
-                                  (msg ^.. key "messages"._Array.traverse.key "text"._String)) $
-                   input
 
 textInput :: T.Text -> A.Object
 textInput text = H.fromList [

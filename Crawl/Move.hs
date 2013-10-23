@@ -13,6 +13,7 @@ import qualified Reactive.Banana as R
 
 import Crawl.Bindings
 import Crawl.Inventory
+import Crawl.Messages
 
 data Move = Go !Int !Int
           | Attack !Int !Int
@@ -68,10 +69,10 @@ moveProgram (Eat slot) = do
   expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
   press (T.singleton $ slotLetter slot)
 
-sendMoves :: R.Behavior t Move -> R.Event t T.Text -> R.Event t MouseMode -> (R.Event t Move, R.Event t T.Text)
+sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> (R.Event t Move, R.Event t T.Text)
 sendMoves move messages inputModeChanged = R.split $ R.spill . fst $
                                            R.mapAccum (return ())
-                                           ((handleMessage <$> messages) `R.union` (handleInputMode <$> move R.<@> inputModeChanged))
+                                           ((handleMessage . _msgText <$> messages) `R.union` (handleInputMode <$> move R.<@> inputModeChanged))
   where handleMessage :: T.Text -> Send () -> ([Either Move T.Text], Send ())
         handleMessage message prog
           | "<cyan>Eat " `T.isPrefixOf` message && " (ye/n/q/i?)<lightgrey>" `T.isSuffixOf` message = ([Right "n"], prog) -- ew, don't eat off the ground
