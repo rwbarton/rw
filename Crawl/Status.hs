@@ -2,11 +2,12 @@
 
 module Crawl.Status where
 
+import Control.Applicative (liftA2)
 import Control.Monad.Trans.State (execState)
 import Data.List (find)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Data.Foldable as F
-import Control.Lens ((^?), (^?!), (.=), to)
+import Control.Lens ((^?), (.=), to)
 import Control.Lens.TH (makeLenses)
 import Control.Lens.Aeson (_Integer, _String, _Array, key)
 import Numeric.Lens (integral)
@@ -78,7 +79,7 @@ playerStatus input = R.accumB initialStatus $ fmap updateStatus input
           F.mapM_ (statuses .=) (msg ^? key "status"._Array.to decodeStatuses)
           where updateIntField s l = F.mapM_ (l .=) (msg ^? key s._Integer.integral)
                 updateTextField s l = F.mapM_ (l .=) (msg ^? key s._String)
-                decodeStatuses = H.fromList . map (\status -> (status ^?! key "light"._String, status ^?! key "col"._Integer.integral)) . F.toList
+                decodeStatuses = H.fromList . mapMaybe (\status -> liftA2 (,) (status ^? key "light"._String) (status ^? key "col"._Integer.integral)) . F.toList
 
 hasStatus :: T.Text -> Player -> Bool
 hasStatus status = (status `H.member`) . _statuses
