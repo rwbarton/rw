@@ -4,14 +4,15 @@
 module Crawl.Inventory (
   Item, ItemType(..), itemType,
   Inventory, InventorySlot, slotLetter,
-  inventory
+  inventory,
+  Equipment, equipment
   ) where
 
 import Data.Char (chr, ord)
 import Control.Monad.Trans.State (execState)
 import Data.Foldable (forM_)
 
-import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=))
+import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=), at)
 import Control.Lens.Aeson (key, _Object, _Integer, _String)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
@@ -109,3 +110,11 @@ inventory input = fmap dropEmptySlots $ R.accumB emptyInventory $ fmap updateInv
           where updateIntField s l = forM_ (item ^? key s._Integer.integral) $ \val -> ix slot.l .= val
                 updateTextField s l = forM_ (item ^? key s._String) $ \val -> ix slot.l .= val
                 slot = InventorySlot (read $ T.unpack slotName)
+
+
+type Equipment = M.Map EquipmentSlot InventorySlot
+
+equipment :: R.Event t A.Value -> R.Behavior t Equipment
+equipment input = R.accumB M.empty $ fmap updateEquipment input
+  where updateEquipment msg = execState $ iforMOf_ (key "equip"._Object.itraversed._Integer.integral) msg updateSlot
+        updateSlot slotName invSlot = at (toEnum $ read $ T.unpack slotName) .= (if invSlot == -1 then Nothing else Just (InventorySlot invSlot))

@@ -29,4 +29,6 @@ module Crawl.Bindings where
 {# enum corpse_type as CorpseType {} deriving (Eq, Ord) #}
 {# enum rod_type as RodType {} deriving (Eq, Ord) #}
 
+{# enum equipment_type as EquipmentSlot {} deriving (Eq, Ord) #}
+
 {# enum monster_type as MonsterType {} #}
