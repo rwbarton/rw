@@ -105,6 +105,12 @@ setupNetwork recvHandler sendHandler = do
 
       floorItems = trackFloorItems cursor level inputModeB messages loc moves inputModeChanged
 
+      pickup =
+        (\l i -> do
+            (_, is) <- H.lookup l i
+            guard $ any wantItemPickup . knownItems $ is
+            return (PickUp wantItemPickup)) <$> loc <*> floorItems
+
       corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
       -- 'loot' is responsible for getting us to the corpse
@@ -115,6 +121,7 @@ setupNetwork recvHandler sendHandler = do
         eat,
         sac,
         rest,
+        pickup,
         loot <$> level <*> loc <*> floorItems,
         explore <$> level <*> loc,
         descend <$> level <*> loc

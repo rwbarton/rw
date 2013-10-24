@@ -3,7 +3,7 @@
 module Crawl.FloorItems (
   Items(..), knownItems, possiblyAny,
   trackFloorItems, scanFloorItems,
-  wantItem,
+  wantItem, wantItemPickup,
   sacrificable
   ) where
 
@@ -70,7 +70,7 @@ trackFloorItems cursor level inputModeB messages loc moves inputModeE =
         handleYouSeeHereMessages l ll item = H.insert l (H.lookup l (_levelItemTiles ll), SingleItem item)
         handleThingsThatAreHereMessages l ll items = H.insert l (H.lookup l (_levelItemTiles ll), ExploredStack items)
         handleMove l Pray = H.delete l
-        -- picking up items too, when implemented
+        handleMove l (PickUp _) = H.delete l
         handleMove _ GoDown = const H.empty
         handleMove _ _ = id
 
@@ -108,8 +108,12 @@ thingsThatAreHereMessages messages commandMode =
 
 wantItem :: T.Text -> Bool
 wantItem itemName
+  = wantItemPickup itemName ||
+    "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)
+
+wantItemPickup :: T.Text -> Bool
+wantItemPickup itemName
   = "gold piece" `T.isInfixOf` itemName ||
-    "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName) ||
     isPermafood itemName
 
 isPermafood :: T.Text -> Bool
