@@ -22,6 +22,7 @@ import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
 
+import Crawl.BadForms
 import Crawl.BananaUtils
 import Crawl.Bindings
 import Crawl.Explore
@@ -115,7 +116,7 @@ setupNetwork recvHandler sendHandler = do
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
       -- 'loot' is responsible for getting us to the corpse
 
-      move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) [
+      move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
         kill <$> level <*> loc,
         eat,
