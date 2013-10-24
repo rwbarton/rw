@@ -103,9 +103,9 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> player <*> inv
 
-      floorItems = trackFloorItems cursor level inputModeB messages loc moves
+      floorItems = trackFloorItems cursor level inputModeB messages loc moves inputModeChanged
 
-      corpses = fmap (HS.fromList . H.keys . H.filter (maybe False sacrificable . snd)) floorItems
+      corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
       -- 'loot' is responsible for getting us to the corpse
 

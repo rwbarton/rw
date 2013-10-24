@@ -8,7 +8,6 @@ import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
 import qualified Data.Set as S
-import qualified Data.Text as T
 
 import Crawl.Bindings
 import Crawl.FloorItems
@@ -54,8 +53,8 @@ explore info loc = case pathfind (_levelFringe info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
 
-loot :: LevelInfo -> Coord -> H.HashMap Coord (Maybe Int, Maybe T.Text) -> Maybe Move
-loot info loc items = case pathfind (HS.fromList $ H.keys $ H.filter (maybe False wantItem . snd) items) info loc of
+loot :: LevelInfo -> Coord -> H.HashMap Coord (Maybe Int, Items) -> Maybe Move
+loot info loc items = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny wantItem . snd) items) info loc of
   Just locs@(loc' : _)
     | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')
   _ -> Nothing
