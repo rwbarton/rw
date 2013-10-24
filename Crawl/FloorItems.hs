@@ -24,18 +24,21 @@ data Items = Empty
            | SingleItem T.Text
            | UnexploredStack T.Text
            | ExploredStack [T.Text]
+           | BigStack
 
 knownItems :: Items -> [T.Text]
 knownItems Empty = []
 knownItems (SingleItem i) = [i]
 knownItems (UnexploredStack i) = [i]
 knownItems (ExploredStack is) = is
+knownItems BigStack = []
 
 possiblyAny :: (T.Text -> Bool) -> Items -> Bool
 possiblyAny _ Empty = False
 possiblyAny f (SingleItem i) = f i
 possiblyAny _ (UnexploredStack _) = True
 possiblyAny f (ExploredStack is) = any f is
+possiblyAny _ BigStack = False
 
 type FloorItems = H.HashMap Coord (Maybe Int, Items)
 
@@ -58,6 +61,7 @@ trackFloorItems cursor level inputModeB messages loc moves inputModeE =
   `R.union` (handleYouSeeHereMessages <$> loc <*> level R.<@> youSeeHereMessages messages)
   `R.union` (handleThingsThatAreHereMessages <$> loc <*> level R.<@>
              thingsThatAreHereMessages (R.whenE ((/= MOUSE_MODE_TARGET) <$> inputModeB) messages) (R.filterE (== MOUSE_MODE_COMMAND) inputModeE))
+  `R.union` (handleManyItemsHereMessages <$> loc <*> level R.<@> R.filterE ((== "<lightgrey>There are many items here.<lightgrey>") . _msgText) messages)
   `R.union` (handleMove <$> loc R.<@> moves)
   where handleItemMessages c ll imsgs = H.insert c (tile, items)
           where tile = H.lookup c (_levelItemTiles ll)
@@ -69,6 +73,7 @@ trackFloorItems cursor level inputModeB messages loc moves inputModeE =
                   _ -> error $ "strange itemMessages: " ++ show imsgs
         handleYouSeeHereMessages l ll item = H.insert l (H.lookup l (_levelItemTiles ll), SingleItem item)
         handleThingsThatAreHereMessages l ll items = H.insert l (H.lookup l (_levelItemTiles ll), ExploredStack items)
+        handleManyItemsHereMessages l ll _ = H.insert l (H.lookup l (_levelItemTiles ll), BigStack)
         handleMove l Pray = H.delete l
         handleMove l (PickUp _) = H.delete l
         handleMove _ GoDown = const H.empty
