@@ -43,7 +43,7 @@ data LevelInfo = LevelInfo {
   _levelLOS :: !(HS.HashSet Coord),
   _levelMonsters :: !(H.HashMap Coord Monster),
   _levelMonsterTable :: !(H.HashMap Int Monster),
-  _levelItemTiles :: !(H.HashMap Coord Int) -- todo: use an enum?
+  _levelItemTiles :: !(H.HashMap Coord Int) -- todo: use a newtype
   }
 
 makeLenses ''LevelInfo
@@ -81,6 +81,9 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                     Just g | g `T.isInfixOf` ")([/%?\"=!:|$" ->
                       -- omitting {, } for now because disturbances/fountains share the glyphs
                       levelItemTiles.at coord .= cellMsg ^? key "t".key "fg"._Integer.integral
+                      -- this includes whether it is a stack too, in bit 18,
+                      -- but we don't explicitly use this: track stacks by the presence of the
+                      -- "something else lying underneath" message.
                     _ -> return ()
                   where updateMonster monsterData =
                           -- This crazy logic is intended to duplicate merge_monster
