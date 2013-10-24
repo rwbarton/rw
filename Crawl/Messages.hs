@@ -20,7 +20,8 @@ import Crawl.Bindings
 
 data Message = Message {
   _msgChannel :: !MsgChannel,
-  _msgText :: !T.Text
+  _msgText :: !T.Text,
+  _msgTurn :: !Int
   } deriving (Show)
 
 -- XXX also have access to turn count
@@ -33,6 +34,7 @@ messagesOf input =
                    parse message = Message
                                    (message ^?! key "channel"._Integer.integral.enum)
                                    (message ^?! key "text"._String)
+                                   (message ^?! key "turn"._Integer.integral)
                return $ drop (fromInteger old_msgs) $ map parse $
                  (msg ^.. key "messages"._Array.traverse))
   input
