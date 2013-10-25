@@ -170,6 +170,7 @@ setupNetwork recvHandler sendHandler = do
         descend <$> level <*> loc
         ]
       (moves, goText) = sendMoves move (R.whenE (fmap (/= MOUSE_MODE_TARGET) inputModeB) messages) (R.whenE stillAlive inputModeChanged)
+                        (filterBy (\msg -> guard (msg ^? key "msg" == Just "menu") >> msg ^? key "tag"._String) demultiplexed)
       lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> (_time <$> player) R.<@> moves
       clearText = fmap (const " ") inventoryMore `R.union`
                   fmap (const " ") goodbye

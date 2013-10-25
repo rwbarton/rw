@@ -122,10 +122,12 @@ useAbility a = do
   press a
 
 
-sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> (R.Event t Move, R.Event t T.Text)
-sendMoves move messages inputModeChanged = R.split $ R.spill . fst $
-                                           R.mapAccum (return ())
-                                           ((handleMessage . _msgText <$> messages) `R.union` (handleInputMode <$> move R.<@> inputModeChanged))
+sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> R.Event t T.Text -> (R.Event t Move, R.Event t T.Text)
+sendMoves move messages inputModeChanged menu
+  = R.split $ R.spill . fst $
+    R.mapAccum (return ())
+    ((handleMessage . _msgText <$> messages) `R.union` (handleInputMode <$> move R.<@> inputModeChanged)
+    `R.union` (handleMenu <$> menu))
   where handleMessage :: T.Text -> Send () -> ([Either Move T.Text], Send ())
         handleMessage message prog
           | "<cyan>Eat " `T.isPrefixOf` message && " (ye/n/q/i?)<lightgrey>" `T.isSuffixOf` message = ([Right "n"], prog) -- ew, don't eat off the ground
@@ -149,6 +151,8 @@ sendMoves move messages inputModeChanged = R.split $ R.spill . fst $
           AnswerYesNo item :>>= prog'@(view . ($ ()) -> SetPickupFunc f :>>= _) -> ([Right (if f item then "y" else "n")], prog' ())
           _ -> ([Right "Y"], prog)
         handleInputMode _ _ prog = ([], prog)
+        handleMenu "shop" prog = ([], press "\ESC" >> prog)
+        handleMenu _ prog = ([], prog)
 
 peel :: Send () -> ([Either Move T.Text], Send ())
 peel prog = case view prog of
