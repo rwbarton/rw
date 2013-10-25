@@ -79,6 +79,7 @@ trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE 
         handleYouSeeHereMessages l ll item = H.insert l (H.lookup l (_levelItemTiles ll), SingleItem item)
         handleThingsThatAreHereMessages l ll items = H.insert l (H.lookup l (_levelItemTiles ll), ExploredStack items)
         handleManyItemsHereMessages l ll _ = H.insert l (H.lookup l (_levelItemTiles ll), BigStack)
+        handleMove l Butcher = H.delete l
         handleMove l Pray = H.delete l
         handleMove l (PickUp _) = H.delete l
         handleMove _ GoDown = const H.empty

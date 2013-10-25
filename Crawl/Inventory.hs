@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -O #-}  -- Weird bug in GHC 7.4.2 with -O2 (#7165)
 
 module Crawl.Inventory (
-  Item, ItemType(..), itemType, cursed,
+  Item, ItemType(..), itemType, cursed, itemColour,
   Inventory, InventorySlot, slotLetter,
   inventory,
   Equipment, equipment
@@ -32,7 +32,8 @@ data Item = Item {
   _quantity :: !Int,
   _flags :: !Int,
   _inscription :: !T.Text,
-  _name :: !T.Text
+  _name :: !T.Text,
+  _col :: !Int
   } deriving (Eq, Show)         -- Eq for 'non'
 
 makeLenses ''Item
@@ -81,6 +82,9 @@ itemType Item { _base_type = bt, _sub_type = st } = case toEnum bt of
 cursed :: Item -> Bool
 cursed item = item ^. flags.bitAt 8
 
+itemColour :: Item -> Int
+itemColour = _col
+
 
 newtype InventorySlot = InventorySlot Int deriving (Eq, Ord, Show)
 type Inventory = M.Map InventorySlot Item
@@ -92,7 +96,7 @@ slotLetter (InventorySlot n)
   | otherwise         = error $ "inventory slot " ++ show n ++ " out of range 0-51"
 
 emptySlot :: Item
-emptySlot = Item 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)"
+emptySlot = Item 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)" 0
 
 emptyInventory :: Inventory
 emptyInventory = M.fromList [ (InventorySlot slot, emptySlot) | slot <- [0..51] ]
@@ -112,6 +116,7 @@ inventory input = fmap dropEmptySlots $ R.accumB emptyInventory $ fmap updateInv
           updateIntField "flags" flags
           updateTextField "inscription" inscription
           updateTextField "name" name
+          updateIntField "col" col
           where updateIntField s l = forM_ (item ^? key s._Integer.integral) $ \val -> ix slot.l .= val
                 updateTextField s l = forM_ (item ^? key s._String) $ \val -> ix slot.l .= val
                 slot = InventorySlot (read $ T.unpack slotName)

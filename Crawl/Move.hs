@@ -24,6 +24,7 @@ data Move = Go !Int !Int
           | LongRest
           | PickUp (T.Text -> Bool)
           | AutoExplore
+          | Butcher
           | Pray
           | Drop InventorySlot
           | Eat InventorySlot
@@ -83,6 +84,7 @@ moveProgram Rest = press "."
 moveProgram (PickUp f) = press "," >> setPickupFunc f
 moveProgram LongRest = press "5"
 moveProgram AutoExplore = press "o"
+moveProgram Butcher = press "c"
 moveProgram Pray = press "p"
 moveProgram (Drop slot) = do
   press "d"
@@ -134,6 +136,8 @@ sendMoves move messages inputModeChanged menu
         handleMessage (T.stripPrefix "<cyan>Pick up " -> Just itemName) prog = ([], answerYesNo itemName >> prog)
         handleMessage "<cyan>Increase (S)trength, (I)ntelligence, or (D)exterity? <lightgrey>" prog
           = ([], press "s" >> prog)
+        handleMessage message prog
+          | "<cyan>Butcher " `T.isPrefixOf` message = ([Right "a"], prog)
         handleMessage message prog = (,) [] $ case view prog of
           ExpectPrompt m :>>= prog' | message == m -> prog' ()
           _ -> prog

@@ -62,6 +62,8 @@ itemTypeNames = [
   ("cheese", ItemFood FOOD_CHEESE),
   ("sausage", ItemFood FOOD_SAUSAGE),
 
+  ("chunk", ItemFood FOOD_CHUNK),
+
   -- others
   ("gold piece", ItemGold)
   ]

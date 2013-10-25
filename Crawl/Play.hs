@@ -103,7 +103,10 @@ setupNetwork recvHandler sendHandler = do
 
       eat = (\p i -> listToMaybe $ do
                 guard $ hungerLevel p < 4
-                (slot, itemType -> ItemFood _) <- M.toList i
+                (slot, item@(itemType -> ItemFood foodType)) <- M.toList i
+                if foodType == FOOD_CHUNK
+                  then guard $ not (itemColour item `elem` [10, 12, 8])
+                  else guard $ hungerLevel p < 3
                 return $ Eat slot
                 ) <$> player <*> inv
 
@@ -116,7 +119,9 @@ setupNetwork recvHandler sendHandler = do
             return (PickUp wi)) <$> loc <*> floorItems <*> (fmap wantItem inv)
 
       corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
-      sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
+      useCorpse = (\l c p ->
+                    guard (HS.member l c) >>
+                    return (if hungerLevel p < 4 then Butcher else Pray)) <$> loc <*> corpses <*> player
       -- 'loot' is responsible for getting us to the corpse
 
       berserk = (\p l -> guard (2 * _hp p < _mhp p && canBerserk p)
@@ -160,7 +165,7 @@ setupNetwork recvHandler sendHandler = do
         killInvisible,
         kill <$> level <*> loc <*> player,
         eat,
-        sac,
+        useCorpse,
         rest,
         pickup,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
