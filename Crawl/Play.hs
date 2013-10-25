@@ -149,6 +149,15 @@ setupNetwork recvHandler sendHandler = do
               (t', AutoExplore) | t' == t -> Just e
               _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
 
+      killWithTab =
+        (\ll l p lm t ->
+          case kill ll l p of
+            Nothing -> Nothing
+            Just m -> case (m, lm) of
+              (_, (t', AutoFight)) | t' == t -> Just m
+              (Attack _ _, _) -> Just AutoFight
+              _ -> Just m) <$> level <*> loc <*> player <*> lastMove <*> (_time <$> player)
+
       invisibleMonsters =
         R.stepper False $
         (const True <$> R.filterE ((== "<lightred>Deactivating autopickup; reactivate with <white>Ctrl-A<lightred>.<lightgrey>") . _msgText) messages)
@@ -167,7 +176,7 @@ setupNetwork recvHandler sendHandler = do
         berserk,
         trogsHand,
         killInvisible,
-        kill <$> level <*> loc <*> player,
+        killWithTab,
         eat,
         useCorpse,
         rest,

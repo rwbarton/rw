@@ -25,6 +25,7 @@ data Move = Go !Int !Int
           | LongRest
           | PickUp (T.Text -> Bool)
           | AutoExplore
+          | AutoFight
           | Butcher
           | Pray
           | Drop InventorySlot
@@ -86,6 +87,7 @@ moveProgram Rest = press "."
 moveProgram (PickUp f) = press "," >> setPickupFunc f
 moveProgram LongRest = press "5"
 moveProgram AutoExplore = press "o"
+moveProgram AutoFight = press "\t"
 moveProgram Butcher = press "c"
 moveProgram Pray = press "p"
 moveProgram (Drop slot) = do
