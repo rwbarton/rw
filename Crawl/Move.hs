@@ -18,6 +18,7 @@ import Crawl.Messages
 data Move = Go !Int !Int
           | Attack !Int !Int
           | Berserk
+          | TrogsHand
           | GoDown
           | Rest
           | LongRest
@@ -74,10 +75,8 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   (-1,  1) -> "\2"
   ( 1,  1) -> "\14"
   _        -> error "tried to make illegal attack"
-moveProgram Berserk = do
-  press "a"
-  expectPrompt "<cyan>Use which ability? (? or * to list) <lightgrey>"
-  press "a"
+moveProgram Berserk = useAbility "a"
+moveProgram TrogsHand = useAbility "b"
 moveProgram GoDown = press ">"
 moveProgram Rest = press "."
 moveProgram (PickUp f) = press "," >> setPickupFunc f
@@ -113,6 +112,13 @@ moveProgram (ScanItem dx dy) = do
               sy = signum ry
   go dx dy
   press "\ESC"
+
+useAbility :: T.Text -> Send ()
+useAbility a = do
+  press "a"
+  expectPrompt "<cyan>Use which ability? (? or * to list) <lightgrey>"
+  press a
+
 
 sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> (R.Event t Move, R.Event t T.Text)
 sendMoves move messages inputModeChanged = R.split $ R.spill . fst $

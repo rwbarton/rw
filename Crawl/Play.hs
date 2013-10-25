@@ -122,6 +122,8 @@ setupNetwork recvHandler sendHandler = do
                          >> guard (not . HS.null $ _levelLOS l `HS.intersection` HS.fromList (H.keys (_levelMonsters l)))
                          >> Just Berserk) <$> player <*> level
 
+      trogsHand = (\p -> guard (isPoisoned p && _hp p <= 2 && not (hasStatus "Regen MR" p) && canTrogsHand p) >> Just TrogsHand) <$> player
+
       exploreWithAuto =
         (\ll l lm t ->
           case explore ll l of
@@ -133,6 +135,7 @@ setupNetwork recvHandler sendHandler = do
       move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
         berserk,
+        trogsHand,
         kill <$> level <*> loc,
         eat,
         sac,
