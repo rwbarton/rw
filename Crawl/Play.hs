@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import Crawl.BadForms
 import Crawl.BananaUtils
 import Crawl.Bindings
+import Crawl.Equipment
 import Crawl.Explore
 import Crawl.FloorItems
 import Crawl.Inventory
@@ -90,6 +91,7 @@ setupNetwork recvHandler sendHandler = do
                             return (Coord x y)) demultiplexed
 
       inv = inventory $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
+      equip = equipment $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
 
       needRest = (\p -> _hp p < _mhp p) <$> player
       rest = (\nr lm t -> if nr
@@ -107,10 +109,10 @@ setupNetwork recvHandler sendHandler = do
       floorItems = trackFloorItems cursor level inputModeB messages loc moves inputModeChanged
 
       pickup =
-        (\l i -> do
+        (\l i wi -> do
             (_, is) <- H.lookup l i
-            guard $ any wantItemPickup . knownItems $ is
-            return (PickUp wantItemPickup)) <$> loc <*> floorItems
+            guard $ any wi . knownItems $ is
+            return (PickUp wi)) <$> loc <*> floorItems <*> (fmap wantItem inv)
 
       corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
@@ -123,7 +125,8 @@ setupNetwork recvHandler sendHandler = do
         sac,
         rest,
         pickup,
-        loot <$> level <*> loc <*> floorItems,
+        loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
+        upgradeEquipment <$> inv <*> equip,
         explore <$> level <*> loc,
         descend <$> level <*> loc
         ]

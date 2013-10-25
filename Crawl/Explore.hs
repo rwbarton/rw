@@ -11,6 +11,7 @@ import qualified Data.Set as S
 
 import Crawl.Bindings
 import Crawl.FloorItems
+import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Move
 
@@ -53,8 +54,8 @@ explore info loc = case pathfind (_levelFringe info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
 
-loot :: LevelInfo -> Coord -> H.HashMap Coord (Maybe Int, Items) -> Maybe Move
-loot info loc items = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny wantItem . snd) items) info loc of
+loot :: LevelInfo -> Coord -> H.HashMap Coord (Maybe Int, Items) -> Inventory -> Maybe Move
+loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny (wantItem inv) . snd) items) info loc of
   Just locs@(loc' : _)
     | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')
   _ -> Nothing

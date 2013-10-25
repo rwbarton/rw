@@ -16,9 +16,12 @@ import qualified Data.Text as T
 
 import Crawl.BananaUtils
 import Crawl.Bindings
+import Crawl.Equipment
+import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Messages
 import Crawl.Move
+import Crawl.ParseItem
 
 data Items = Empty
            | SingleItem T.Text
@@ -111,20 +114,18 @@ thingsThatAreHereMessages messages commandMode =
         handleCommandMode _ _ = (Nothing, Nothing)
 
 
-wantItem :: T.Text -> Bool
-wantItem itemName
-  = wantItemPickup itemName ||
-    "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)
+-- The rest should probably get split out into its own module.
 
-wantItemPickup :: T.Text -> Bool
-wantItemPickup itemName
-  = "gold piece" `T.isInfixOf` itemName ||
-    isPermafood itemName
+wantItem :: Inventory -> T.Text -> Bool
+wantItem inv itemName
+  = maybe False (wantItemPickup inv) (parseItemType itemName) ||
+    sacrificable itemName
+    -- "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)
 
-isPermafood :: T.Text -> Bool
-isPermafood itemName =
-  any (`T.isInfixOf` itemName) ["meat ration", "bread ration"]
-  -- todo: add the rest; but watch out for "A sedimented orange potion."
+wantItemPickup :: Inventory -> ItemType -> Bool
+wantItemPickup _ ItemGold = True
+wantItemPickup _ (ItemFood _) = True
+wantItemPickup inv item = isEquipmentUpgrade inv item
 
 sacrificable :: T.Text -> Bool
 sacrificable itemName = "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)

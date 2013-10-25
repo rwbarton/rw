@@ -54,6 +54,7 @@ data ItemType = ItemWeapon WeaponType
               | ItemCorpse CorpseType
               | ItemGold
               | ItemRod (Maybe RodType)
+              deriving Eq
 
 itemType :: Item -> ItemType
 itemType Item { _base_type = bt, _sub_type = st } = case toEnum bt of

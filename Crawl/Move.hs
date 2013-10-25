@@ -24,6 +24,9 @@ data Move = Go !Int !Int
           | AutoExplore
           | Pray
           | Eat InventorySlot
+          | Wield InventorySlot
+          | Wear InventorySlot
+          | TakeOff InventorySlot
           | ScanItem !Int !Int
 
 
@@ -78,6 +81,18 @@ moveProgram Pray = press "p"
 moveProgram (Eat slot) = do
   press "e"
   expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  press (T.singleton $ slotLetter slot)
+moveProgram (Wield slot) = do
+  press "w"
+  expectPrompt "<cyan>Wield which item (- for none, * to show all)? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  press (T.singleton $ slotLetter slot)
+moveProgram (Wear slot) = do
+  press "W"
+  expectPrompt "<cyan>Wear which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  press (T.singleton $ slotLetter slot)
+moveProgram (TakeOff slot) = do
+  press "T"
+  expectPrompt "<cyan>Take off which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
   press (T.singleton $ slotLetter slot)
 moveProgram (ScanItem dx dy) = do
   -- todo: send this all in a single message
