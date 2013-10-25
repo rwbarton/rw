@@ -52,11 +52,12 @@ trackFloorItems :: R.Behavior t Coord ->
                    R.Behavior t LevelInfo ->
                    R.Behavior t MouseMode ->
                    R.Event t Message ->
+                   R.Behavior t (Int, Move) ->
                    R.Behavior t Coord ->
                    R.Event t Move ->
                    R.Event t MouseMode ->
                    R.Behavior t FloorItems
-trackFloorItems cursor level inputModeB messages loc moves inputModeE =
+trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE =
   -- automatically clear out entries when we can see the item is gone
   liftA2 (H.intersectionWith (flip const)) (fmap _levelItemTiles level) $
   R.accumB H.empty $
@@ -66,7 +67,8 @@ trackFloorItems cursor level inputModeB messages loc moves inputModeE =
              thingsThatAreHereMessages (R.whenE ((/= MOUSE_MODE_TARGET) <$> inputModeB) messages) (R.filterE (== MOUSE_MODE_COMMAND) inputModeE))
   `R.union` (handleManyItemsHereMessages <$> loc <*> level R.<@> R.filterE ((== "<lightgrey>There are many items here.<lightgrey>") . _msgText) messages)
   `R.union` (handleMove <$> loc R.<@> moves)
-  where handleItemMessages c ll imsgs = H.insert c (tile, items)
+  where messages = R.whenE ((\(_, m) -> case m of AutoExplore -> False; _ -> True) <$> lastMove) messages0
+        handleItemMessages c ll imsgs = H.insert c (tile, items)
           where tile = H.lookup c (_levelItemTiles ll)
                 items = case imsgs of
                   [] -> Empty

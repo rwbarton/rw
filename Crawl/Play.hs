@@ -106,7 +106,7 @@ setupNetwork recvHandler sendHandler = do
                 return $ Eat slot
                 ) <$> player <*> inv
 
-      floorItems = trackFloorItems cursor level inputModeB messages loc moves inputModeChanged
+      floorItems = trackFloorItems cursor level inputModeB messages lastMove loc moves inputModeChanged
 
       pickup =
         (\l i wi -> do
@@ -122,6 +122,14 @@ setupNetwork recvHandler sendHandler = do
                          >> guard (not . HS.null $ _levelLOS l `HS.intersection` HS.fromList (H.keys (_levelMonsters l)))
                          >> Just Berserk) <$> player <*> level
 
+      exploreWithAuto =
+        (\ll l lm t ->
+          case explore ll l of
+            Nothing -> Nothing
+            Just e -> case lm of
+              (t', AutoExplore) | t' == t -> Just e
+              _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
+
       move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
         berserk,
@@ -133,7 +141,7 @@ setupNetwork recvHandler sendHandler = do
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip,
         dropJunkEquipment <$> inv <*> equip,
-        explore <$> level <*> loc,
+        exploreWithAuto,
         descend <$> level <*> loc
         ]
       (moves, goText) = sendMoves move (R.whenE (fmap (/= MOUSE_MODE_TARGET) inputModeB) messages) (R.whenE stillAlive inputModeChanged)
