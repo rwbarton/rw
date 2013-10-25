@@ -23,6 +23,7 @@ data Move = Go !Int !Int
           | PickUp (T.Text -> Bool)
           | AutoExplore
           | Pray
+          | Drop InventorySlot
           | Eat InventorySlot
           | Wield InventorySlot
           | Wear InventorySlot
@@ -78,6 +79,10 @@ moveProgram (PickUp f) = press "," >> setPickupFunc f
 moveProgram LongRest = press "5"
 moveProgram AutoExplore = press "o"
 moveProgram Pray = press "p"
+moveProgram (Drop slot) = do
+  press "d"
+  expectPrompt "<cyan>Drop what? (_ for help) (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  press (T.singleton $ slotLetter slot)
 moveProgram (Eat slot) = do
   press "e"
   expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"

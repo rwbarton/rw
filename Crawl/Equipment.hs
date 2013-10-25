@@ -31,6 +31,17 @@ isEquipmentUpgrade inv item = case equipmentSlot item of
   Just equipSlot -> itemScore item > maximum (0 : map itemScore [ i | i <- map itemType (M.elems inv), equipmentSlot i == Just equipSlot ])
   Nothing -> False
 
+-- This gets called after upgradeEquipment,
+-- so anything that goes in a slot we have filled must be junk
+dropJunkEquipment :: Inventory -> Equipment -> Maybe Move
+dropJunkEquipment inv equip =
+  case [ invSlot
+       | (invSlot, item) <- M.toList inv,
+         Just equipSlot <- return (equipmentSlot $ itemType item),
+         Just otherSlot <- return (M.lookup equipSlot equip),
+         invSlot /= otherSlot ] of
+    invSlot : _ -> Just (Drop invSlot)
+    [] -> Nothing
 
 
 equipmentSlot :: ItemType -> Maybe EquipmentSlot
