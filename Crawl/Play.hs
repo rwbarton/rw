@@ -118,8 +118,13 @@ setupNetwork recvHandler sendHandler = do
       sac = (\l c -> guard (HS.member l c) >> Just Pray) <$> loc <*> corpses
       -- 'loot' is responsible for getting us to the corpse
 
+      berserk = (\p l -> guard (2 * _hp p < _mhp p && canBerserk p)
+                         >> guard (not . HS.null $ _levelLOS l `HS.intersection` HS.fromList (H.keys (_levelMonsters l)))
+                         >> Just Berserk) <$> player <*> level
+
       move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
+        berserk,
         kill <$> level <*> loc,
         eat,
         sac,

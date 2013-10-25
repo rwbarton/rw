@@ -100,3 +100,6 @@ hungerLevel :: Player -> Int
 hungerLevel p = fromMaybe 4 $ fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [0..]))
   where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
                           "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
+
+canBerserk :: Player -> Bool
+canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && hungerLevel p >= 3

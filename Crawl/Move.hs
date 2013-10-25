@@ -17,6 +17,7 @@ import Crawl.Messages
 
 data Move = Go !Int !Int
           | Attack !Int !Int
+          | Berserk
           | GoDown
           | Rest
           | LongRest
@@ -73,6 +74,10 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   (-1,  1) -> "\2"
   ( 1,  1) -> "\14"
   _        -> error "tried to make illegal attack"
+moveProgram Berserk = do
+  press "a"
+  expectPrompt "<cyan>Use which ability? (? or * to list) <lightgrey>"
+  press "a"
 moveProgram GoDown = press ">"
 moveProgram Rest = press "."
 moveProgram (PickUp f) = press "," >> setPickupFunc f
