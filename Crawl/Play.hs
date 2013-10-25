@@ -158,7 +158,7 @@ setupNetwork recvHandler sendHandler = do
         berserk,
         trogsHand,
         killInvisible,
-        kill <$> level <*> loc,
+        kill <$> level <*> loc <*> player,
         eat,
         sac,
         rest,

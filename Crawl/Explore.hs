@@ -14,6 +14,7 @@ import Crawl.FloorItems
 import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Move
+import Crawl.Status
 
 data V = START | C { unC :: !Coord } deriving (Eq, Ord)
 
@@ -38,9 +39,11 @@ plantPenalty MONS_PLANT = 20
 plantPenalty MONS_BUSH = 80
 plantPenalty _ = 0
 
-kill :: LevelInfo -> Coord -> Maybe Move
-kill info loc = case pathfind (HS.fromList $ H.keys $ H.filter isRealMonster (_levelMonsters info)) info loc of
-  Just [loc'] -> Just (attackTo loc loc')
+kill :: LevelInfo -> Coord -> Player -> Maybe Move
+kill info loc player = case pathfind (HS.fromList $ H.keys $ H.filter isRealMonster (_levelMonsters info)) info loc of
+  Just [loc']
+    | _monsterType (_levelMonsters info H.! loc') == MONS_PLAYER_GHOST && canBerserk player -> Just Berserk
+    | otherwise -> Just (attackTo loc loc')
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
   where isRealMonster ty = case _monsterType ty of
