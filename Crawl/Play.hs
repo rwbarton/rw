@@ -132,10 +132,20 @@ setupNetwork recvHandler sendHandler = do
               (t', AutoExplore) | t' == t -> Just e
               _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
 
+      invisibleMonsters =
+        R.stepper False $
+        (const True <$> R.filterE ((== "<lightred>Deactivating autopickup; reactivate with <white>Ctrl-A<lightred>.<lightgrey>") . _msgText) messages)
+        `R.union` (const False <$> R.filterE ((== "<lightred>Reactivating autopickup.<lightgrey>") . _msgText) messages)
+      killInvisible = (\ims u -> guard ims >> Just (Attack (dxs !! u) (dys !! u))) <$> invisibleMonsters <*> R.stepper 0 (randomize (0, 7) demultiplexed)
+        where dxs = [-1, -1, -1, 0, 1, 1, 1, 0]
+              dys = [-1, 0, 1, 1, 1, 0, -1, -1]
+
+
       move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
         berserk,
         trogsHand,
+        killInvisible,
         kill <$> level <*> loc,
         eat,
         sac,
