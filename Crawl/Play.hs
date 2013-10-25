@@ -6,6 +6,7 @@ module Crawl.Play (
 
 import Control.Applicative ((<$>), (<*>), liftA2)
 import Control.Monad (forever, guard)
+import Data.List (intersect)
 import Data.Maybe (fromMaybe, listToMaybe)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
@@ -122,7 +123,18 @@ setupNetwork recvHandler sendHandler = do
                          >> guard (not . HS.null $ _levelLOS l `HS.intersection` HS.fromList (H.keys (_levelMonsters l)))
                          >> Just Berserk) <$> player <*> level
 
-      trogsHand = (\p -> guard (isPoisoned p && _hp p <= 2 && not (hasStatus "Regen MR" p) && canTrogsHand p) >> Just TrogsHand) <$> player
+      trogsHand =
+        (\p l -> do
+            guard (not (hasStatus "Regen MR" p) && canTrogsHand p)
+            let monstersInView = [ _monsterType mon | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)) ]
+            guard $ isPoisoned p && _hp p <= 2 || not (null $ monstersInView `intersect` trogsHandMonsters)
+            return TrogsHand) <$> player <*> level
+        where trogsHandMonsters = -- http://www.reddit.com/r/roguelikes/comments/1eq3g6/dcss_advice_for_mibe/ca2pwni
+                [MONS_WIZARD, MONS_OGRE_MAGE, MONS_DEEP_ELF_MAGE, MONS_EROLCHA, MONS_DEEP_ELF_SORCERER,
+                 MONS_DEEP_ELF_DEMONOLOGIST, MONS_ORC_SORCERER, MONS_SPHINX, MONS_GREAT_ORB_OF_EYES, MONS_GOLDEN_EYE,
+                 MONS_LICH, MONS_ANCIENT_LICH, MONS_RUPERT, MONS_NORRIS, MONS_AIZUL, MONS_MENNAS, MONS_LOUISE,
+                 MONS_JORGRUN, MONS_DRACONIAN_SHIFTER, MONS_CACODEMON, MONS_PANDEMONIUM_LORD, MONS_ERESHKIGAL] ++
+                [MONS_SIGMUND, MONS_GRINDER]
 
       exploreWithAuto =
         (\ll l lm t ->

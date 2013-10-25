@@ -31,4 +31,4 @@ module Crawl.Bindings where
 
 {# enum equipment_type as EquipmentSlot {} deriving (Eq, Ord) #}
 
-{# enum monster_type as MonsterType {} #}
+{# enum monster_type as MonsterType {} deriving (Eq, Ord) #}
