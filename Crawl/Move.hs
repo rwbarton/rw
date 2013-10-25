@@ -31,6 +31,7 @@ data Move = Go !Int !Int
           | Wear InventorySlot
           | TakeOff InventorySlot
           | ScanItem !Int !Int
+          | LookHere
 
 
 data SendOp a where
@@ -112,6 +113,7 @@ moveProgram (ScanItem dx dy) = do
               sy = signum ry
   go dx dy
   press "\ESC"
+moveProgram LookHere = press ";"
 
 useAbility :: T.Text -> Send ()
 useAbility a = do
