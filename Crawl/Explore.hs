@@ -1,13 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Crawl.Explore (
-  kill, explore, loot, descend
+  kill, explore, loot, enterBranches, descend
   ) where
 
 import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
 import qualified Data.Set as S
+import qualified Data.Text as T
 
 import Crawl.Bindings
 import Crawl.FloorItems
@@ -65,9 +66,33 @@ loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possib
   _ -> Nothing
   where isTeleTrap = (== DNGN_TRAP_MAGICAL) -- Not really, but the best we can do for now
 
+enterBranches :: LevelInfo -> Coord -> (T.Text -> Bool) -> Maybe Move
+enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isBranchEntrance (_levelMap info)) info loc of
+  Just [] -> Just (stairDirection (_levelMap info H.! loc))
+  Just (loc' : _) -> Just (moveTo loc loc')
+  _ -> Nothing
+  where isBranchEntrance DNGN_ENTER_TEMPLE = not $ beenTo "Temple"
+        isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- watch out for zigs though
+        isBranchEntrance DNGN_ENTER_LAIR = True
+        isBranchEntrance DNGN_ENTER_SNAKE_PIT = not $ beenTo "Snake"
+        isBranchEntrance DNGN_ENTER_SWAMP = not $ beenTo "Swamp"
+        isBranchEntrance DNGN_ENTER_SHOALS = not $ beenTo "Shoals"
+        isBranchEntrance DNGN_ENTER_SPIDER_NEST = not $ beenTo "Spider"
+        isBranchEntrance DNGN_ENTER_SLIME_PITS = not $ beenTo "Slime"
+
+        -- leave these places immediately
+        isBranchEntrance DNGN_RETURN_FROM_TEMPLE = True
+        isBranchEntrance DNGN_RETURN_FROM_SNAKE_PIT = True
+        isBranchEntrance DNGN_RETURN_FROM_SWAMP = True
+        isBranchEntrance DNGN_RETURN_FROM_SHOALS = True
+        isBranchEntrance DNGN_RETURN_FROM_SPIDER_NEST = True
+        isBranchEntrance DNGN_RETURN_FROM_SLIME_PITS = True
+
+        isBranchEntrance _ = False
+
 descend :: LevelInfo -> Coord -> Maybe Move
 descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_levelMap info)) info loc of
-  Just [] -> Just GoDown
+  Just [] -> Just (stairDirection (_levelMap info H.! loc))
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
   where isDownStair DNGN_STONE_STAIRS_DOWN_I = True
@@ -77,6 +102,10 @@ descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_
         isDownStair DNGN_EXIT_PORTAL_VAULT = True
         isDownStair DNGN_EXIT_ABYSS = True
         isDownStair _ = False
+
+stairDirection :: Feature -> Move
+stairDirection feat | DNGN_RETURN_FROM_ORCISH_MINES <= feat && feat <= DNGN_RETURN_FROM_SPIDER_NEST = GoUp
+stairDirection _ = GoDown
 
 moveTo :: Coord -> Coord -> Move
 moveTo (Coord sx sy) (Coord tx ty) = Go (tx - sx) (ty - sy)

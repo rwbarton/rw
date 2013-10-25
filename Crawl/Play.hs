@@ -157,6 +157,10 @@ setupNetwork recvHandler sendHandler = do
         where dxs = [-1, -1, -1, 0, 1, 1, 1, 0]
               dys = [-1, 0, 1, 1, 1, 0, -1, -1]
 
+      beenTo = fmap (flip HS.member) $
+        R.accumB HS.empty $
+        (HS.insert . _place <$> player) R.<@ moves
+
 
       move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
@@ -168,6 +172,7 @@ setupNetwork recvHandler sendHandler = do
         useCorpse,
         rest,
         pickup,
+        enterBranches <$> level <*> loc <*> beenTo,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip,
         dropJunkEquipment <$> inv <*> equip,

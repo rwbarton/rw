@@ -19,6 +19,7 @@ data Move = Go !Int !Int
           | Attack !Int !Int
           | Berserk
           | TrogsHand
+          | GoUp
           | GoDown
           | Rest
           | LongRest
@@ -79,6 +80,7 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   _        -> error "tried to make illegal attack"
 moveProgram Berserk = useAbility "a"
 moveProgram TrogsHand = useAbility "b"
+moveProgram GoUp = press "<"
 moveProgram GoDown = press ">"
 moveProgram Rest = press "."
 moveProgram (PickUp f) = press "," >> setPickupFunc f
