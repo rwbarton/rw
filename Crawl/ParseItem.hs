@@ -10,7 +10,7 @@ import Crawl.Bindings
 import Crawl.Inventory
 
 parseItemType :: T.Text -> Maybe ItemType
-parseItemType itemName = fmap snd $ find ((`T.isInfixOf` itemName) . fst) itemTypeNames
+parseItemType itemName = fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames
 
 itemTypeNames :: [(T.Text, ItemType)]
 itemTypeNames = [
@@ -48,7 +48,19 @@ itemTypeNames = [
   -- food we care about
   ("meat ration", ItemFood FOOD_MEAT_RATION),
   ("bread ration", ItemFood FOOD_BREAD_RATION),
+  ("pear", ItemFood FOOD_PEAR),
+  ("apple", ItemFood FOOD_APPLE),
+  ("choko", ItemFood FOOD_CHOKO),
+  ("honeycomb", ItemFood FOOD_HONEYCOMB),
+  ("royal jell", ItemFood FOOD_ROYAL_JELLY),
+  ("snozzcumber", ItemFood FOOD_SNOZZCUMBER),
+  ("pizza", ItemFood FOOD_PIZZA),
+  ("apricot", ItemFood FOOD_APRICOT),
+  -- orange is dangerous (orange potion)
   ("banana", ItemFood FOOD_BANANA),
+  -- skip some low value fruit
+  ("cheese", ItemFood FOOD_CHEESE),
+  ("sausage", ItemFood FOOD_SAUSAGE),
 
   -- others
   ("gold piece", ItemGold)
