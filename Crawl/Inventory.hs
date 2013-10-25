@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -O #-}  -- Weird bug in GHC 7.4.2 with -O2 (#7165)
 
 module Crawl.Inventory (
-  Item, ItemType(..), itemType,
+  Item, ItemType(..), itemType, cursed,
   Inventory, InventorySlot, slotLetter,
   inventory,
   Equipment, equipment
@@ -12,8 +12,9 @@ import Data.Char (chr, ord)
 import Control.Monad.Trans.State (execState)
 import Data.Foldable (forM_)
 
-import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=), at)
+import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=), at, (^.))
 import Control.Lens.Aeson (key, _Object, _Integer, _String)
+import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.Map as M
@@ -76,6 +77,9 @@ itemType Item { _base_type = bt, _sub_type = st } = case toEnum bt of
   other          -> error $ "unexpected item base_type " ++ show other
   where maybeToEnum unknowns s =
           let t = toEnum s in if t `elem` unknowns then Nothing else Just t
+
+cursed :: Item -> Bool
+cursed item = item ^. flags.bitAt 8
 
 
 newtype InventorySlot = InventorySlot Int deriving (Eq, Ord, Show)

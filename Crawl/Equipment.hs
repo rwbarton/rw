@@ -16,6 +16,7 @@ upgradeEquipment inv equip =
        | let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv),
          equipSlot <- availableSlots,
          let oldInvSlot = M.lookup equipSlot equip,
+         maybe True (not . cursed) $ (`M.lookup` inv) =<< oldInvSlot,
          let invSlot = maximumBy (comparing score) $ map fst $
                        filter ((== Just equipSlot) . equipmentSlot . itemType . snd) $
                        M.toList inv,
@@ -39,6 +40,7 @@ dropJunkEquipment inv equip =
        | (invSlot, item) <- M.toList inv,
          Just equipSlot <- return (equipmentSlot $ itemType item),
          Just otherSlot <- return (M.lookup equipSlot equip),
+         not $ cursed $ inv M.! otherSlot,
          invSlot /= otherSlot ] of
     invSlot : _ -> Just (Drop invSlot)
     [] -> Nothing
