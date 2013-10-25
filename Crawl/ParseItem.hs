@@ -48,7 +48,7 @@ itemTypeNames = [
   -- food we care about
   ("meat ration", ItemFood FOOD_MEAT_RATION),
   ("bread ration", ItemFood FOOD_BREAD_RATION),
-  ("pear", ItemFood FOOD_PEAR),
+  -- pear is dangerous ("pearl" ring / randart descriptor)
   ("apple", ItemFood FOOD_APPLE),
   ("choko", ItemFood FOOD_CHOKO),
   ("honeycomb", ItemFood FOOD_HONEYCOMB),
