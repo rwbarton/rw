@@ -4,7 +4,7 @@ module Crawl.Play (
   play
   ) where
 
-import Control.Applicative ((<$>), (<*>), liftA2)
+import Control.Applicative ((<$>), pure, (<*>), liftA2)
 import Control.Monad (forever, guard)
 import Data.List (intersect)
 import Data.Maybe (fromMaybe, listToMaybe)
@@ -171,7 +171,7 @@ setupNetwork recvHandler sendHandler = do
         (HS.insert . _place <$> player) R.<@ moves
 
 
-      move = foldr (liftA2 (flip fromMaybe)) (R.pure Rest) $ map (fmap filterLegalInForm player <*>) [
+      move = foldr (liftA2 (flip fromMaybe)) (pure Rest) $ map (fmap filterLegalInForm player <*>) [
         scanFloorItems <$> level <*> loc <*> floorItems,
         berserk,
         trogsHand,
