@@ -10,8 +10,9 @@ import Crawl.Bindings
 import Crawl.Inventory
 import Crawl.Move
 
-upgradeEquipment :: Inventory -> Equipment -> Maybe Move
-upgradeEquipment inv equip =
+upgradeEquipment :: Inventory -> Equipment -> Bool -> Maybe Move
+upgradeEquipment inv equip berserk =
+  (if berserk then fmap (const Rest) else id) $
   case [ (equipSlot, invSlot, oldInvSlot)
        | let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv),
          equipSlot <- availableSlots,

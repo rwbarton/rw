@@ -183,7 +183,7 @@ setupNetwork recvHandler sendHandler = do
         pickup,
         enterBranches <$> level <*> loc <*> beenTo,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
-        upgradeEquipment <$> inv <*> equip,
+        upgradeEquipment <$> inv <*> equip <*> (isBerserk <$> player),
         dropJunkEquipment <$> inv <*> equip,
         exploreWithAuto,
         descend <$> level <*> loc
