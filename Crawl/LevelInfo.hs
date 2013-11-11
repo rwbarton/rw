@@ -71,6 +71,8 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                     (cellMsg ^? key "f"._Integer.integral.enum)
                   -- hack to avoid zigs
                   when (cellMsg ^? key "t".key "bg"._Integer.to (.&. 0xffff) == Just 2193) (levelMap.at coord .= Just DNGN_FLOOR)
+                  -- hack to avoid troves
+                  when (cellMsg ^? key "t".key "bg"._Integer.to (.&. 0xffff) == Just 2189) (levelMap.at coord .= Just DNGN_FLOOR)
                   F.mapM_ (levelLOS.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.bitAt 18.to not)
                   F.mapM_ updateMonster (cellMsg ^? key "mon")
 
