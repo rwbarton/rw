@@ -2,12 +2,14 @@
 
 module Crawl.BadForms where
 
+import Data.List (find)
+
 import qualified Data.HashMap.Strict as H
 
 import Crawl.Move
 import Crawl.Status
 
-data Form = Normal | Tree
+data Form = Normal | Tree | Fungus
 
 filterLegalInForm :: Player -> Maybe Move -> Maybe Move
 filterLegalInForm p (Just m)
@@ -21,7 +23,7 @@ legalInForm p m = case (form, m) of
   (Tree, Rest) -> True
   (Tree, LongRest) -> True
   (Tree, _) -> False
+  (Fungus, Go _ _) -> False
   (_, _) -> True
-  where form = if "Tree" `H.member` _statuses p
-               then Tree
-               else Normal
+  where form = maybe Normal snd $ find (\(light, _) -> light `H.member` _statuses p) badforms
+        badforms = [("Tree", Tree), ("Fungus", Fungus)]
