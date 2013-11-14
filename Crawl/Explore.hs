@@ -71,8 +71,7 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
   Just [] -> Just (stairDirection (_levelMap info H.! loc))
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
-  where isBranchEntrance DNGN_ENTER_TEMPLE = not $ beenTo "Temple"
-        isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- zigs & troves have been replaced by DNGN_FLOOR
+  where isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- zigs & troves have been replaced by DNGN_FLOOR
         isBranchEntrance DNGN_ENTER_LAIR = True
         isBranchEntrance DNGN_ENTER_SNAKE_PIT = not $ beenTo "Snake"
         isBranchEntrance DNGN_ENTER_SWAMP = not $ beenTo "Swamp"
@@ -81,7 +80,6 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance DNGN_ENTER_SLIME_PITS = not $ beenTo "Slime"
 
         -- leave these places immediately
-        isBranchEntrance DNGN_RETURN_FROM_TEMPLE = True
         isBranchEntrance DNGN_RETURN_FROM_SNAKE_PIT = True
         isBranchEntrance DNGN_RETURN_FROM_SWAMP = True
         isBranchEntrance DNGN_RETURN_FROM_SHOALS = True
