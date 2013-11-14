@@ -8,6 +8,7 @@ module Crawl.FloorItems (
   ) where
 
 import Control.Applicative ((<$>), (<*>), liftA2)
+import Control.Monad (mplus)
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
@@ -66,8 +67,10 @@ trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE 
   `R.union` (handleThingsThatAreHereMessages <$> loc <*> level R.<@>
              thingsThatAreHereMessages (R.whenE ((/= MOUSE_MODE_TARGET) <$> inputModeB) messages) (R.filterE (== MOUSE_MODE_COMMAND) inputModeE))
   `R.union` (handleManyItemsHereMessages <$> loc <*> level R.<@> R.filterE ((== "<lightgrey>There are many items here.<lightgrey>") . _msgText) messages)
+  `R.union` (handleScanBigStackMessages <$> loc <*> level R.<@> (filterBy (T.stripSuffix "? ((y)es/(n)o/(a)ll/(m)enu/*?g,/q)<lightgrey>") . filterBy (T.stripPrefix "<cyan>Pick up ") . fmap _msgText) scanBigStackMessages)
   `R.union` (handleMove <$> loc R.<@> moves)
   where messages = R.whenE ((\(_, m) -> case m of AutoExplore -> False; _ -> True) <$> lastMove) messages0
+        scanBigStackMessages = R.whenE ((\(_, m) -> case m of ScanBigStack -> True; _ -> False) <$> lastMove) messages0
         handleItemMessages c ll imsgs = H.insert c (tile, items)
           where tile = H.lookup c (_levelItemTiles ll)
                 items = case imsgs of
@@ -79,6 +82,14 @@ trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE 
         handleYouSeeHereMessages l ll item = H.insert l (H.lookup l (_levelItemTiles ll), SingleItem item)
         handleThingsThatAreHereMessages l ll items = H.insert l (H.lookup l (_levelItemTiles ll), ExploredStack items)
         handleManyItemsHereMessages l ll _ = H.insert l (H.lookup l (_levelItemTiles ll), BigStack)
+        handleScanBigStackMessages l ll m old = H.insert l (H.lookup l (_levelItemTiles ll), newItems) old
+          where newItems = case H.lookup l old of
+                  Just (_, BigStack) -> ExploredStack [m]
+                  Just (_, ExploredStack e) -> ExploredStack (e ++ [m])
+                  _ -> error "handleScanBigStackMessages: unexpected previous floorItems contents"
+                  -- could potentially do something cleverer here:
+                  -- accumulate the item list and only update on "Okay, then.",
+                  -- but this should be fine
         handleMove l Butcher = H.delete l
         handleMove l Pray = H.delete l
         handleMove l (PickUp _) = H.delete l
@@ -86,11 +97,15 @@ trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE 
         handleMove _ _ = id
 
 scanFloorItems :: LevelInfo -> Coord -> FloorItems -> Maybe Move
-scanFloorItems level (Coord lx ly) floorItems =
-  -- find items in LOS whose tile data has changed
-  case [ c | (c, t) <- H.toList (_levelItemTiles level), c `HS.member` _levelLOS level, fmap fst (H.lookup c floorItems) /= Just (Just t) ] of
-    Coord x y : _ -> Just (ScanItem (x-lx) (y-ly))
-    _ -> Nothing
+scanFloorItems level l@(Coord lx ly) floorItems = scanBigStackHere `mplus` scanNearby
+  where scanBigStackHere = -- examine big stack if we're on one
+          case H.lookup l floorItems of
+            Just (_, BigStack) -> Just ScanBigStack
+            _ -> Nothing
+        scanNearby = -- find items in LOS whose tile data has changed
+          case [ c | (c, t) <- H.toList (_levelItemTiles level), c `HS.member` _levelLOS level, fmap fst (H.lookup c floorItems) /= Just (Just t) ] of
+            Coord x y : _ -> Just (ScanItem (x-lx) (y-ly))
+            _ -> Nothing
 
 
 itemMessages :: R.Event t Message -> R.Event t [T.Text]

@@ -33,6 +33,7 @@ data Move = Go !Int !Int
           | Wield InventorySlot
           | Wear InventorySlot
           | TakeOff InventorySlot
+          | ScanBigStack
           | ScanItem !Int !Int
           | LookHere
 
@@ -110,6 +111,7 @@ moveProgram (TakeOff slot) = do
   press "T"
   expectPrompt "<cyan>Take off which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
   press (T.singleton $ slotLetter slot)
+moveProgram ScanBigStack = moveProgram (PickUp (const False))
 moveProgram (ScanItem dx dy) = do
   -- todo: send this all in a single message
   press "x"
