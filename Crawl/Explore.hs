@@ -72,7 +72,7 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
   where isBranchEntrance DNGN_ENTER_TEMPLE = not $ beenTo "Temple"
-        isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- watch out for zigs though
+        isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- zigs & troves have been replaced by DNGN_FLOOR
         isBranchEntrance DNGN_ENTER_LAIR = True
         isBranchEntrance DNGN_ENTER_SNAKE_PIT = not $ beenTo "Snake"
         isBranchEntrance DNGN_ENTER_SWAMP = not $ beenTo "Swamp"
