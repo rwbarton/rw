@@ -1,10 +1,8 @@
 #!/bin/sh -e
 
 cd ./$(git rev-parse --show-cdup)
-mkdir -p crawl-debug
-cd crawl-debug
-if [ -e crawl-ref ] ; then
+if [ -e crawl-debug ] ; then
     echo "crawl checkout already exists, delete it to clone a new one."
 else
-    git clone git://gitorious.org/crawl/crawl.git
+    git clone git://gitorious.org/crawl/crawl.git crawl-debug
 fi
