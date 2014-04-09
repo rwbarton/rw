@@ -10,7 +10,7 @@ import Data.Maybe (fromMaybe)
 
 import Control.Lens ((^?), (^?!), (^..), enum, traverse)
 import Numeric.Lens (integral)
-import Control.Lens.Aeson (_Integer, _String, _Array, key)
+import Data.Aeson.Lens (_Integer, _String, _Array, key)
 import qualified Data.Aeson as A
 import qualified Reactive.Banana as R
 import qualified Data.Text as T

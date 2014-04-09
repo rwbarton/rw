@@ -13,9 +13,8 @@ import qualified Data.ByteString.Lazy as BL
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, newSplitChan,
                                       readChan, writeChan)
-import Network.WebSockets (connect, WebSockets, Hybi10,
-                           getSink, sendSink,
-                           receiveDataMessage,
+import Network.WebSockets (runClient,
+                           receiveDataMessage, send,
                            Message(DataMessage),
                            DataMessage(Text, Binary))
 import Codec.Zlib (initInflate, Inflate, WindowBits(WindowBits),
@@ -40,22 +39,19 @@ connectToWebtiles :: AccountInfo -> IO (InChan A.Object, OutChan A.Object)
 connectToWebtiles config = do
   (sendIncoming, recvIncoming) <- newSplitChan
   (sendOutgoing, recvOutgoing) <- newSplitChan
-  forkIO $ connect (server config) (port config) "/socket" $ asHybi10 $ do
-    sink <- getSink
+  forkIO $ runClient (server config) (port config) "/socket" $ \connection -> do
     liftIO $ forkIO $ forever $ do
       object <- readChan recvOutgoing
-      sendSink sink $ DataMessage (Text (A.encode object))
+      send connection $ DataMessage (Text (A.encode object))
     inflator <- liftIO $ initInflate (WindowBits (-15)) -- raw zlib
     forever $ do
-      Binary compressed <- receiveDataMessage
+      Binary compressed <- receiveDataMessage connection
       liftIO $ do
         decompressed <- fmap jsonHack $ decompress inflator compressed
         -- BL.putStrLn decompressed
         writeChan sendIncoming $
           fromMaybe (error "JSON decoding error") (A.decode decompressed)
   return (sendOutgoing, recvIncoming)
-  where asHybi10 :: WebSockets Hybi10 a -> WebSockets Hybi10 a
-        asHybi10 = id
 
 jsonHack :: BL.ByteString -> BL.ByteString
 jsonHack msg

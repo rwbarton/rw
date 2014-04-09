@@ -12,7 +12,7 @@ import Control.Lens ((^?), (^..), (.=), (%~), _1, traverse, at, enum, contains, 
 import Control.Lens.TH (makeLenses)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
-import Control.Lens.Aeson (_Bool, _Array, _Integer, _String, key)
+import Data.Aeson.Lens (_Bool, _Array, _Integer, _String, key)
 import qualified Data.Aeson as A
 import qualified Data.Hashable as H
 import qualified Data.HashMap.Strict as H
@@ -26,7 +26,7 @@ type MapCell = Feature
 
 data Coord = Coord !Int !Int deriving (Eq, Ord)
 instance H.Hashable Coord where
-  hash (Coord x y) = x + 100 * y
+  hashWithSalt salt (Coord x y) = salt + x + 100 * y
 
 -- Want these to be strict, but how to catch uninitialized fields then?
 data Monster = Monster {

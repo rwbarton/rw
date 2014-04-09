@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -O #-}  -- Weird bug in GHC 7.4.2 with -O2 (#7165)
 
 module Crawl.Inventory (
@@ -13,7 +13,7 @@ import Control.Monad.Trans.State (execState)
 import Data.Foldable (forM_)
 
 import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=), at, (^.))
-import Control.Lens.Aeson (key, _Object, _Integer, _String)
+import Data.Aeson.Lens (key, _Object, _Integer, _String)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
@@ -107,7 +107,7 @@ dropEmptySlots = M.filter ((/= fromEnum OBJ_UNASSIGNED) . _base_type)
 inventory :: R.Event t A.Value -> R.Behavior t Inventory
 inventory input = fmap dropEmptySlots $ R.accumB emptyInventory $ fmap updateInventory input
   where updateInventory msg = execState $ iforMOf_ (key "inv"._Object.itraversed) msg updateSlot
-        updateSlot slotName item = do
+        updateSlot slotName (item :: A.Value) = do
           updateIntField "base_type" base_type
           updateIntField "sub_type" sub_type
           updateIntField "plus" plus

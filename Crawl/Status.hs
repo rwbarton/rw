@@ -9,7 +9,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Data.Foldable as F
 import Control.Lens ((^?), (.=), to)
 import Control.Lens.TH (makeLenses)
-import Control.Lens.Aeson (_Integer, _String, _Array, key)
+import Data.Aeson.Lens (_Integer, _String, _Array, key)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H

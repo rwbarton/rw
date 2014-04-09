@@ -12,7 +12,7 @@ import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
 import Control.Lens ((^..), (^?), at, to, traverse, enum)
-import Control.Lens.Aeson (_Integer, _String, _Array, key)
+import Data.Aeson.Lens (_Integer, _String, _Array, key)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
