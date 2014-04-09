@@ -28,7 +28,6 @@ itemTypeNames = [
   ("plate armour", ItemArmour ARM_PLATE_ARMOUR),
   ("cloak", ItemArmour ARM_CLOAK),
   ("cap", ItemArmour ARM_CAP),
-  ("wizard hat", ItemArmour ARM_WIZARD_HAT),
   ("helmet", ItemArmour ARM_HELMET),
   ("gloves", ItemArmour ARM_GLOVES),
   ("gauntlets", ItemArmour ARM_GLOVES),

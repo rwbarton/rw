@@ -64,7 +64,7 @@ loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possib
   Just locs@(loc' : _)
     | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')
   _ -> Nothing
-  where isTeleTrap = (== DNGN_TRAP_MAGICAL) -- Not really, but the best we can do for now
+  where isTeleTrap = (== DNGN_TRAP_TELEPORT)
 
 enterBranches :: LevelInfo -> Coord -> (T.Text -> Bool) -> Maybe Move
 enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isBranchEntrance (_levelMap info)) info loc of
@@ -73,18 +73,18 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
   _ -> Nothing
   where isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- zigs & troves have been replaced by DNGN_FLOOR
         isBranchEntrance DNGN_ENTER_LAIR = True
-        isBranchEntrance DNGN_ENTER_SNAKE_PIT = not $ beenTo "Snake"
+        isBranchEntrance DNGN_ENTER_SNAKE = not $ beenTo "Snake"
         isBranchEntrance DNGN_ENTER_SWAMP = not $ beenTo "Swamp"
         isBranchEntrance DNGN_ENTER_SHOALS = not $ beenTo "Shoals"
-        isBranchEntrance DNGN_ENTER_SPIDER_NEST = not $ beenTo "Spider"
-        isBranchEntrance DNGN_ENTER_SLIME_PITS = not $ beenTo "Slime"
+        isBranchEntrance DNGN_ENTER_SPIDER = not $ beenTo "Spider"
+        isBranchEntrance DNGN_ENTER_SLIME = not $ beenTo "Slime"
 
         -- leave these places immediately
-        isBranchEntrance DNGN_RETURN_FROM_SNAKE_PIT = True
+        isBranchEntrance DNGN_RETURN_FROM_SNAKE = True
         isBranchEntrance DNGN_RETURN_FROM_SWAMP = True
         isBranchEntrance DNGN_RETURN_FROM_SHOALS = True
-        isBranchEntrance DNGN_RETURN_FROM_SPIDER_NEST = True
-        isBranchEntrance DNGN_RETURN_FROM_SLIME_PITS = True
+        isBranchEntrance DNGN_RETURN_FROM_SPIDER = True
+        isBranchEntrance DNGN_RETURN_FROM_SLIME = True
 
         isBranchEntrance _ = False
 
@@ -102,7 +102,7 @@ descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_
         isDownStair _ = False
 
 stairDirection :: Feature -> Move
-stairDirection feat | DNGN_RETURN_FROM_ORCISH_MINES <= feat && feat <= DNGN_RETURN_FROM_SPIDER_NEST = GoUp
+stairDirection feat | DNGN_RETURN_FROM_ORC <= feat && feat <= DNGN_RETURN_FROM_SPIDER = GoUp
 stairDirection _ = GoDown
 
 moveTo :: Coord -> Coord -> Move
@@ -116,7 +116,7 @@ isPassable feat | DNGN_MANGROVE <= feat && feat <= DNGN_DEEP_WATER = False
 isPassable _ = True
 
 movementCost :: Feature -> Int
-movementCost DNGN_TRAP_MAGICAL = 10000
+movementCost DNGN_TRAP_TELEPORT = 10000
 movementCost DNGN_RUNED_DOOR = 10000
 movementCost DNGN_CLOSED_DOOR = 2
 movementCost DNGN_SHALLOW_WATER = 2

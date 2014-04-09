@@ -53,7 +53,6 @@ equipmentSlot :: ItemType -> Maybe EquipmentSlot
 equipmentSlot (ItemWeapon _) = Just EQ_WEAPON
 equipmentSlot (ItemArmour ARM_CLOAK) = Just EQ_CLOAK
 equipmentSlot (ItemArmour ARM_CAP) = Just EQ_HELMET
-equipmentSlot (ItemArmour ARM_WIZARD_HAT) = Just EQ_HELMET
 equipmentSlot (ItemArmour ARM_HELMET) = Just EQ_HELMET
 equipmentSlot (ItemArmour ARM_GLOVES) = Just EQ_GLOVES
 equipmentSlot (ItemArmour ARM_BOOTS) = Just EQ_BOOTS
@@ -106,7 +105,6 @@ baseAC ARM_PEARL_DRAGON_ARMOUR = 10
 
 baseAC ARM_CLOAK = 1
 baseAC ARM_CAP = 0
-baseAC ARM_WIZARD_HAT = 0
 baseAC ARM_HELMET = 1
 baseAC ARM_GLOVES = 1
 baseAC ARM_BOOTS = 1
@@ -130,7 +128,6 @@ baseEVP ARM_PEARL_DRAGON_ARMOUR = 3
 
 baseEVP ARM_CLOAK = 0
 baseEVP ARM_CAP = 0
-baseEVP ARM_WIZARD_HAT = 0
 baseEVP ARM_HELMET = 0
 baseEVP ARM_GLOVES = 0
 baseEVP ARM_BOOTS = 0
