@@ -7,7 +7,6 @@ import Control.Monad (mplus, when)
 import Control.Monad.Trans.State (execState, put)
 import Data.Maybe (fromMaybe)
 import qualified Data.Foldable as F
-import Data.Bits ((.&.))
 import Control.Lens ((^?), (^..), (.=), (%~), _1, traverse, at, enum, contains, to, use)
 import Control.Lens.TH (makeLenses)
 import Data.Bits.Lens (bitAt)
@@ -69,10 +68,6 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                               when (not $ coord `H.member` oldLevel) $ do -- neighboring area needs update
                                 mapM_ updateFringe [ Coord (x+dx) (y+dy) | let Coord x y = coord, dx <- [-1,0,1], dy <- [-1,0,1] ])
                     (cellMsg ^? key "f"._Integer.integral.enum)
-                  -- hack to avoid zigs
-                  when (cellMsg ^? key "t".key "bg"._Integer.to (.&. 0xffff) == Just 2193) (levelMap.at coord .= Just DNGN_FLOOR)
-                  -- hack to avoid troves
-                  when (cellMsg ^? key "t".key "bg"._Integer.to (.&. 0xffff) == Just 2189) (levelMap.at coord .= Just DNGN_FLOOR)
                   F.mapM_ (levelLOS.contains coord .=) (cellMsg ^? key "t".key "bg"._Integer.bitAt 18.to not)
                   F.mapM_ updateMonster (cellMsg ^? key "mon")
 

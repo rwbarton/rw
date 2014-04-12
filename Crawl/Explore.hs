@@ -71,7 +71,14 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
   Just [] -> Just (stairDirection (_levelMap info H.! loc))
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
-  where isBranchEntrance DNGN_ENTER_PORTAL_VAULT = True -- zigs & troves have been replaced by DNGN_FLOOR
+  where isBranchEntrance DNGN_ENTER_BAZAAR = True
+        isBranchEntrance DNGN_ENTER_SEWER = True
+        isBranchEntrance DNGN_ENTER_OSSUARY = True
+        isBranchEntrance DNGN_ENTER_BAILEY = True
+        isBranchEntrance DNGN_ENTER_ICE_CAVE = True
+        isBranchEntrance DNGN_ENTER_VOLCANO = True
+        isBranchEntrance DNGN_ENTER_WIZLAB = True
+
         isBranchEntrance DNGN_ENTER_LAIR = True
         isBranchEntrance DNGN_ENTER_SNAKE = not $ beenTo "Snake"
         isBranchEntrance DNGN_ENTER_SWAMP = not $ beenTo "Swamp"
@@ -97,7 +104,16 @@ descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_
         isDownStair DNGN_STONE_STAIRS_DOWN_II = True
         isDownStair DNGN_STONE_STAIRS_DOWN_III = True
         isDownStair DNGN_ESCAPE_HATCH_DOWN = True
-        isDownStair DNGN_EXIT_PORTAL_VAULT = True
+        isDownStair DNGN_EXIT_ZIGGURAT = True
+        isDownStair DNGN_EXIT_BAZAAR = True
+        isDownStair DNGN_EXIT_TROVE = True
+        isDownStair DNGN_EXIT_SEWER = True
+        isDownStair DNGN_EXIT_OSSUARY = True
+        isDownStair DNGN_EXIT_BAILEY = True
+        isDownStair DNGN_EXIT_ICE_CAVE = True
+        isDownStair DNGN_EXIT_VOLCANO = True
+        isDownStair DNGN_EXIT_WIZLAB = True
+        isDownStair DNGN_EXIT_LABYRINTH = True
         isDownStair DNGN_EXIT_ABYSS = True
         isDownStair _ = False
 
