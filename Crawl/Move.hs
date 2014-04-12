@@ -14,6 +14,7 @@ import qualified Reactive.Banana as R
 import Crawl.Bindings
 import Crawl.Inventory
 import Crawl.Messages
+import Crawl.Menu
 
 data Move = Go !Int !Int
           | Attack !Int !Int
@@ -41,6 +42,7 @@ data Move = Go !Int !Int
 data SendOp a where
   Press :: T.Text -> SendOp ()
   ExpectPrompt :: T.Text -> SendOp ()
+  ExpectMenu :: (T.Text -> Bool) -> SendOp ()
   SetPickupFunc :: (T.Text -> Bool) -> SendOp ()
   AnswerYesNo :: T.Text -> SendOp ()
 
@@ -51,6 +53,9 @@ press = singleton . Press
 
 expectPrompt :: T.Text -> Send ()
 expectPrompt = singleton . ExpectPrompt
+
+expectMenu :: (T.Text -> Bool) -> Send ()
+expectMenu = singleton . ExpectMenu
 
 setPickupFunc :: (T.Text -> Bool) -> Send ()
 setPickupFunc = singleton . SetPickupFunc
@@ -93,23 +98,24 @@ moveProgram Butcher = press "c"
 moveProgram Pray = press "p"
 moveProgram (Drop slot) = do
   press "d"
-  expectPrompt "<cyan>Drop what? (_ for help) (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  expectMenu (" Drop what? (_ for help)" `T.isSuffixOf`)
   press (T.singleton $ slotLetter slot)
+  press "\r"
 moveProgram (Eat slot) = do
   press "e"
-  expectPrompt "<cyan>Eat which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  expectMenu (== "<white>Eat which item?")
   press (T.singleton $ slotLetter slot)
 moveProgram (Wield slot) = do
   press "w"
-  expectPrompt "<cyan>Wield which item (- for none, * to show all)? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  expectMenu (== "<white>Wield which item (- for none, * to show all)?")
   press (T.singleton $ slotLetter slot)
 moveProgram (Wear slot) = do
   press "W"
-  expectPrompt "<cyan>Wear which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  expectMenu (== "<white>Wear which item?")
   press (T.singleton $ slotLetter slot)
 moveProgram (TakeOff slot) = do
   press "T"
-  expectPrompt "<cyan>Take off which item? (<white>?<cyan> for menu, <white>Esc<cyan> to quit)<lightgrey>"
+  expectMenu (== "<white>Take off which item?")
   press (T.singleton $ slotLetter slot)
 moveProgram ScanBigStack = moveProgram (PickUp (const False))
 moveProgram (ScanItem dx dy) = do
@@ -130,7 +136,7 @@ useAbility a = do
   press a
 
 
-sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> R.Event t T.Text -> (R.Event t Move, R.Event t T.Text)
+sendMoves :: R.Behavior t Move -> R.Event t Message -> R.Event t MouseMode -> R.Event t Menu -> (R.Event t Move, R.Event t T.Text)
 sendMoves move messages inputModeChanged menu
   = R.split $ R.spill . fst $
     R.mapAccum (return ())
@@ -161,7 +167,13 @@ sendMoves move messages inputModeChanged menu
           AnswerYesNo item :>>= prog'@(view . ($ ()) -> SetPickupFunc f :>>= _) -> ([Right (if f item then "y" else "n")], prog' ())
           _ -> ([Right "Y"], prog)
         handleInputMode _ _ prog = ([], prog)
-        handleMenu "shop" prog = ([], press "\ESC" >> prog)
+        handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())
+        handleMenu (_menuTag -> "shop") prog = ([], press "\ESC" >> prog)
+        handleMenu (_menuTitle -> title) prog
+          | "<white>Inventory: " `T.isPrefixOf` title = ([Right " "], prog)
+        handleMenu (_menuTitle -> title) prog = case view prog of
+          ExpectMenu f :>>= prog' | f title -> peel (prog' ())
+          _ -> ([], prog)
         handleMenu _ prog = ([], prog)
 
 peel :: Send () -> ([Either Move T.Text], Send ())

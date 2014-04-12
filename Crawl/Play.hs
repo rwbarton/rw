@@ -13,7 +13,6 @@ import System.Exit (exitWith, ExitCode(ExitSuccess))
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
 import Control.Lens ((^..), (^?), at, to, traverse, enum)
 import Data.Aeson.Lens (_Integer, _String, _Array, key)
-import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
@@ -33,6 +32,7 @@ import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Messages
 import Crawl.Move
+import Crawl.Menu
 import Crawl.Status
 
 play :: OutChan A.Object -> InChan A.Object -> IO ()
@@ -60,11 +60,6 @@ setupNetwork recvHandler sendHandler = do
                                      msg ^? key "mode"._Integer.integral.enum) demultiplexed
       inputModeB = R.stepper MOUSE_MODE_NORMAL inputModeEvents
       inputModeChanged = R.filterApply (fmap (/=) inputModeB) inputModeEvents
-
-      inventoryMore = R.filterE (\msg -> msg ^? key "msg" == Just "menu" &&
-                                         msg ^? key "tag" == Just "inventory" &&
-                                         msg ^? key "flags"._Integer.bitAt 12 == Just True)
-                      demultiplexed
 
       goodbye = R.filterE (\msg -> msg ^? key "msg" == Just "txt" &&
                                    msg ^? key "id"  == Just "crt" &&
@@ -189,10 +184,9 @@ setupNetwork recvHandler sendHandler = do
         descend <$> level <*> loc
         ]
       (moves, goText) = sendMoves move (R.whenE (fmap (/= MOUSE_MODE_TARGET) inputModeB) messages) (R.whenE stillAlive inputModeChanged)
-                        (filterBy (\msg -> guard (msg ^? key "msg" == Just "menu") >> msg ^? key "tag"._String) demultiplexed)
+                        (filterBy (\msg -> guard (msg ^? key "msg" == Just "menu") >> return (parseMenu msg)) demultiplexed)
       lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> (_time <$> player) R.<@> moves
-      clearText = fmap (const " ") inventoryMore `R.union`
-                  fmap (const " ") goodbye
+      clearText = fmap (const " ") goodbye
 
       outputText = goText `R.union` clearText
       output = pong `R.union` fmap textInput outputText
