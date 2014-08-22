@@ -126,7 +126,7 @@ attackTo :: Coord -> Coord -> Move
 attackTo (Coord sx sy) (Coord tx ty) = Attack (tx - sx) (ty - sy)
 
 isPassable :: Feature -> Bool
-isPassable feat | DNGN_MANGROVE <= feat && feat <= DNGN_DEEP_WATER = False
+isPassable feat | DNGN_TREE <= feat && feat <= DNGN_DEEP_WATER = False
 isPassable _ = True
 
 movementCost :: Feature -> Int

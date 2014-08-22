@@ -50,9 +50,7 @@ itemTypeNames = [
   -- pear is dangerous ("pearl" ring / randart descriptor)
   ("apple", ItemFood FOOD_APPLE),
   ("choko", ItemFood FOOD_CHOKO),
-  ("honeycomb", ItemFood FOOD_HONEYCOMB),
   ("royal jell", ItemFood FOOD_ROYAL_JELLY),
-  ("snozzcumber", ItemFood FOOD_SNOZZCUMBER),
   ("pizza", ItemFood FOOD_PIZZA),
   ("apricot", ItemFood FOOD_APRICOT),
   -- orange is dangerous (orange potion)

@@ -98,7 +98,7 @@ moveProgram Butcher = press "c"
 moveProgram Pray = press "p"
 moveProgram (Drop slot) = do
   press "d"
-  expectMenu (" Drop what? (_ for help)" `T.isSuffixOf`)
+  expectMenu (== "<white>Drop what? (_ for help)")
   press (T.singleton $ slotLetter slot)
   press "\r"
 moveProgram (Eat slot) = do
