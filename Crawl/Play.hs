@@ -89,7 +89,7 @@ setupNetwork recvHandler sendHandler = do
       inv = inventory $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
       equip = equipment $ R.filterE (\msg -> msg ^? key "msg" == Just "player") demultiplexed
 
-      needRest = (\p -> _hp p < _mhp p) <$> player
+      needRest = (\p -> _hp p < _mhp p || isSlow p) <$> player
       rest = (\nr lm t -> if nr
                           then case lm of
                             (t', LongRest) | t' == t -> Just Rest
@@ -119,9 +119,31 @@ setupNetwork recvHandler sendHandler = do
                     return (if hungerLevel p < 4 then Butcher else Pray)) <$> loc <*> corpses <*> player
       -- 'loot' is responsible for getting us to the corpse
 
-      berserk = (\p l -> guard (2 * _hp p < _mhp p && canBerserk p)
-                         >> guard (not . HS.null $ _levelLOS l `HS.intersection` HS.fromList (H.keys (_levelMonsters l)))
-                         >> Just Berserk) <$> player <*> level
+      berserk =
+        (\p ll l -> do
+            guard $ canBerserk p
+            let monstersInView = [ (_monsterType mon, dist sq l)
+                                 | sq <- HS.toList $ _levelLOS ll, Just mon <- return (H.lookup sq (_levelMonsters ll)) ]
+            guard $ not . null $ monstersInView
+            guard $ (2 * _hp p < _mhp p && canBerserk p)
+              || sum [ meleeThreat m | (m, d) <- monstersInView, d <= 2] >= _xl p
+            return Berserk) <$> player <*> level <*> loc
+        where meleeThreat MONS_GNOLL = 1
+              meleeThreat MONS_WORM = 1
+              meleeThreat MONS_IGUANA = 2
+              meleeThreat MONS_ORC_WIZARD = 3
+              meleeThreat MONS_ORC_PRIEST = 3
+              meleeThreat MONS_IJYB = 3
+              meleeThreat MONS_TERENCE = 3
+              meleeThreat MONS_ICE_BEAST = 4
+              meleeThreat MONS_CRAZY_YIUF = 4
+              meleeThreat MONS_OGRE = 6
+              meleeThreat MONS_ORC_WARRIOR = 6
+              meleeThreat MONS_GOLIATH_BEETLE = 10
+              meleeThreat MONS_HILL_GIANT = 10
+              meleeThreat MONS_PLAYER_GHOST = 27
+              meleeThreat _ = 0
+              dist (Coord x1 y1) (Coord x2 y2) = max (abs (x1 - x2)) (abs (y1 - y2))
 
       trogsHand =
         (\p l -> do

@@ -41,10 +41,8 @@ plantPenalty MONS_BUSH = 80
 plantPenalty _ = 0
 
 kill :: LevelInfo -> Coord -> Player -> Maybe Move
-kill info loc player = case pathfind (HS.fromList $ H.keys $ H.filter isRealMonster (_levelMonsters info)) info loc of
-  Just [loc']
-    | _monsterType (_levelMonsters info H.! loc') == MONS_PLAYER_GHOST && canBerserk player -> Just Berserk
-    | otherwise -> Just (attackTo loc loc')
+kill info loc _player = case pathfind (HS.fromList $ H.keys $ H.filter isRealMonster (_levelMonsters info)) info loc of
+  Just [loc'] -> Just (attackTo loc loc')
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
   where isRealMonster ty = case _monsterType ty of
