@@ -108,4 +108,4 @@ canBerserk :: Player -> Bool
 canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && hungerLevel p >= 3
 
 canTrogsHand :: Player -> Bool
-canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2
+canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2 && hungerLevel p >= 1
