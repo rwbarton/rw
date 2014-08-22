@@ -47,17 +47,10 @@ itemTypeNames = [
   -- food we care about
   ("meat ration", ItemFood FOOD_MEAT_RATION),
   ("bread ration", ItemFood FOOD_BREAD_RATION),
-  -- pear is dangerous ("pearl" ring / randart descriptor)
-  ("apple", ItemFood FOOD_APPLE),
-  ("choko", ItemFood FOOD_CHOKO),
   ("royal jell", ItemFood FOOD_ROYAL_JELLY),
+  ("fruit", ItemFood FOOD_FRUIT),
   ("pizza", ItemFood FOOD_PIZZA),
-  ("apricot", ItemFood FOOD_APRICOT),
-  -- orange is dangerous (orange potion)
-  ("banana", ItemFood FOOD_BANANA),
-  -- skip some low value fruit
-  ("cheese", ItemFood FOOD_CHEESE),
-  ("sausage", ItemFood FOOD_SAUSAGE),
+  ("beef jerky", ItemFood FOOD_BEEF_JERKY),
 
   ("chunk", ItemFood FOOD_CHUNK),
 
