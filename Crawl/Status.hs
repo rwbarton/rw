@@ -99,13 +99,16 @@ isSlow = hasStatus "Slow"
 isPoisoned :: Player -> Bool
 isPoisoned = hasStatus "Pois"
 
+isMesmerised :: Player -> Bool
+isMesmerised = hasStatus "Mesm"
+
 hungerLevel :: Player -> Int
 hungerLevel p = fromMaybe 4 $ fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [0..]))
   where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
                           "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
 
 canBerserk :: Player -> Bool
-canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && hungerLevel p >= 3
+canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p) && hungerLevel p >= 3
 
 canTrogsHand :: Player -> Bool
 canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2 && hungerLevel p >= 1
