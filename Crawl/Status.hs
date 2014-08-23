@@ -16,6 +16,8 @@ import qualified Data.HashMap.Strict as H
 import qualified Reactive.Banana as R
 import qualified Data.Text as T
 
+import Crawl.Bindings (HungerLevel(..))
+
 data Player = Player {
   _species :: !T.Text,
   _god :: !T.Text,
@@ -102,13 +104,16 @@ isPoisoned = hasStatus "Pois"
 isMesmerised :: Player -> Bool
 isMesmerised = hasStatus "Mesm"
 
-hungerLevel :: Player -> Int
-hungerLevel p = fromMaybe 4 $ fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [0..]))
+hungerLevel :: Player -> HungerLevel
+hungerLevel p = fromMaybe HS_SATIATED $
+                fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [HS_STARVING ..]))
   where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
                           "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
 
 canBerserk :: Player -> Bool
-canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p) && hungerLevel p >= 3
+canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p)
+               && hungerLevel p >= HS_HUNGRY
 
 canTrogsHand :: Player -> Bool
-canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2 && hungerLevel p >= 1
+canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2
+                 && hungerLevel p >= HS_NEAR_STARVING

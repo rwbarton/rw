@@ -98,11 +98,11 @@ setupNetwork recvHandler sendHandler = do
                           else Nothing) <$> needRest <*> lastMove <*> (_time <$> player)
 
       eat = (\p i -> listToMaybe $ do
-                guard $ hungerLevel p < 4
+                guard $ hungerLevel p < HS_SATIATED
                 (slot, item@(itemType -> ItemFood foodType)) <- M.toList i
                 if foodType == FOOD_CHUNK
                   then guard $ not (itemColour item `elem` [10, 12, 8])
-                  else guard $ hungerLevel p < 3
+                  else guard $ hungerLevel p < HS_HUNGRY
                 return $ Eat slot
                 ) <$> player <*> inv
 
@@ -117,7 +117,7 @@ setupNetwork recvHandler sendHandler = do
       corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
       useCorpse = (\l c p ->
                     guard (HS.member l c) >>
-                    return (if hungerLevel p < 4 then Butcher else Pray)) <$> loc <*> corpses <*> player
+                    return (if hungerLevel p < HS_SATIATED then Butcher else Pray)) <$> loc <*> corpses <*> player
       -- 'loot' is responsible for getting us to the corpse
 
       berserk =
