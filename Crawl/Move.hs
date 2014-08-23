@@ -34,6 +34,7 @@ data Move = Go !Int !Int
           | Wield InventorySlot
           | Wear InventorySlot
           | TakeOff InventorySlot
+          | Quaff InventorySlot
           | ScanBigStack
           | ScanItem !Int !Int
           | LookHere
@@ -116,6 +117,10 @@ moveProgram (Wear slot) = do
 moveProgram (TakeOff slot) = do
   press "T"
   expectMenu (== "<white>Take off which item?")
+  press (T.singleton $ slotLetter slot)
+moveProgram (Quaff slot) = do
+  press "q"
+  expectMenu (== "<white>Drink which item?")
   press (T.singleton $ slotLetter slot)
 moveProgram ScanBigStack = moveProgram (PickUp (const False))
 moveProgram (ScanItem dx dy) = do

@@ -54,6 +54,9 @@ itemTypeNames = [
 
   ("chunk", ItemFood FOOD_CHUNK),
 
+  -- potions
+  ("potion", ItemPotion Nothing),
+
   -- others
   ("gold piece", ItemGold)
   ]

@@ -29,6 +29,7 @@ import Crawl.Bindings
 import Crawl.Equipment
 import Crawl.Explore
 import Crawl.FloorItems
+import Crawl.Identify
 import Crawl.Inventory
 import Crawl.LevelInfo
 import Crawl.Messages
@@ -212,6 +213,7 @@ setupNetwork recvHandler sendHandler = do
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
         exploreWithAuto,
+        identify <$> inv <*> player,
         descend <$> level <*> loc
         ]
       (moves, goText) = sendMoves move (R.whenE (fmap (/= MOUSE_MODE_TARGET) inputModeB) messages) (R.whenE stillAlive inputModeChanged)
