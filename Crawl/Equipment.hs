@@ -15,14 +15,15 @@ upgradeEquipment :: Inventory -> Equipment -> Player -> Maybe Move -> Maybe Move
 upgradeEquipment inv equip player morsel =
   (if isBerserk player then fmap (const Rest) else id) $
   case [ (equipSlot, invSlot, oldInvSlot)
-       | let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv),
+       | let inv' = M.filter ((/= 8) . itemColour) inv, -- ignore unwearable items
+         let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv'),
          equipSlot <- availableSlots,
          let oldInvSlot = M.lookup equipSlot equip,
          maybe True canUnwield $ (`M.lookup` inv) =<< oldInvSlot,
          not (equipSlot == EQ_BODY_ARMOUR && maybe False cursed ((`M.lookup` inv) =<< M.lookup EQ_CLOAK equip)),
          let invSlot = maximumBy (comparing score) $ map fst $
                        filter ((== Just equipSlot) . equipmentSlot . itemType . snd) $
-                       M.toList inv,
+                       M.toList inv',
          score invSlot > maybe 0 score oldInvSlot ] of
     (EQ_WEAPON, invSlot, _) : _
       | isVampiric (inv M.! invSlot) && hungerLevel player < HS_FULL
