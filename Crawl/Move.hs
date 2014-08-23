@@ -174,7 +174,6 @@ sendMoves move messages inputModeChanged menu
         handleMenu (_menuTitle -> title) prog = case view prog of
           ExpectMenu f :>>= prog' | f title -> peel (prog' ())
           _ -> ([], prog)
-        handleMenu _ prog = ([], prog)
 
 peel :: Send () -> ([Either Move T.Text], Send ())
 peel prog = case view prog of
