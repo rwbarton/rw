@@ -181,6 +181,7 @@ sendMoves move messages inputModeChanged menu
         handleInputMode _ _ prog = ([], prog)
         handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())
         handleMenu (_menuTag -> "shop") prog = ([], press "\ESC" >> prog)
+        handleMenu (_menuTag -> "skills") prog = ([Right "\r"], prog)
         handleMenu (_menuTitle -> title) prog
           | "<white>Inventory: " `T.isPrefixOf` title = ([Right "\ESC"], prog)
         handleMenu mn prog

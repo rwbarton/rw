@@ -4,6 +4,7 @@ module Crawl.Menu where
 
 import Control.Applicative ((<$>))
 import Data.Char (ord, chr)
+import Data.Maybe (fromMaybe)
 
 import qualified Data.Text as T
 import qualified Data.Aeson as A
@@ -32,7 +33,7 @@ parseMenuItem item = MenuItem (item ^?! key "text"._String) <$> (item ^? key "ho
 parseMenu :: A.Value -> Menu
 parseMenu msg = Menu {
   _menuTag = msg ^?! key "tag"._String,
-  _menuTitle = msg ^?! key "title".key "text"._String,
+  _menuTitle = fromMaybe "" $ msg ^? key "title".key "text"._String,
   _menuItems = msg ^.. key "items".values.folding parseMenuItem
   }
 
