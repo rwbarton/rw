@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -O #-}  -- Weird bug in GHC 7.4.2 with -O2 (#7165)
 
 module Crawl.Inventory (
-  Item, ItemType(..), itemType, cursed, itemColour,
+  Item, ItemType(..), itemType, cursed, isVampiric, itemColour,
   Inventory, InventorySlot, slotLetter,
   inventory,
   Equipment, equipment
@@ -84,6 +84,9 @@ cursed item = item ^. flags.bitAt 8
 
 itemColour :: Item -> Int
 itemColour = _col
+
+isVampiric :: Item -> Bool
+isVampiric item = "(vamp)" `T.isInfixOf` _name item
 
 
 newtype InventorySlot = InventorySlot Int deriving (Eq, Ord, Show)

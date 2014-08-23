@@ -4,7 +4,7 @@ module Crawl.Play (
   play
   ) where
 
-import Control.Applicative ((<$>), pure, (<*>), liftA2)
+import Control.Applicative ((<$>), pure, (<*>), liftA2, (<|>))
 import Control.Monad (forever, guard)
 import Data.List (intersect)
 import Data.Maybe (fromMaybe, listToMaybe)
@@ -97,14 +97,21 @@ setupNetwork recvHandler sendHandler = do
                             _ -> Just LongRest
                           else Nothing) <$> needRest <*> lastMove <*> (_time <$> player)
 
-      eat = (\p i -> listToMaybe $ do
-                guard $ hungerLevel p < HS_SATIATED
-                (slot, item@(itemType -> ItemFood foodType)) <- M.toList i
-                if foodType == FOOD_CHUNK
-                  then guard $ not (itemColour item `elem` [10, 12, 8])
-                  else guard $ hungerLevel p < HS_HUNGRY
-                return $ Eat slot
-                ) <$> player <*> inv
+      eatChunk =
+        (\p i -> listToMaybe $ do
+            (slot, item@(itemType -> ItemFood FOOD_CHUNK)) <- M.toList i
+            guard $ not (itemColour item `elem` [10, 12, 8])
+            guard $ hungerLevel p < HS_SATIATED -- for normal races
+            return $ Eat slot) <$> player <*> inv
+      eatPermafood =
+        (\i -> listToMaybe $ do
+            (slot, (itemType -> ItemFood foodType)) <- M.toList i
+            guard $ foodType /= FOOD_CHUNK
+            return $ Eat slot) <$> inv
+      eatAnything = (<|>) <$> eatChunk <*> eatPermafood
+      -- Always eat a chunk if possible; permafood only if very hungry
+      eat = (\p ec ep -> ec <|> (guard (hungerLevel p < HS_HUNGRY) >> ep))
+            <$> player <*> eatChunk <*> eatPermafood
 
       floorItems = trackFloorItems cursor level inputModeB messages lastMove loc moves inputModeChanged
 
@@ -202,7 +209,7 @@ setupNetwork recvHandler sendHandler = do
         pickup,
         enterBranches <$> level <*> loc <*> beenTo,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
-        upgradeEquipment <$> inv <*> equip <*> (isBerserk <$> player),
+        upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
         exploreWithAuto,
         descend <$> level <*> loc

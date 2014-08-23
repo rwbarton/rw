@@ -9,37 +9,46 @@ import qualified Data.Map as M
 import Crawl.Bindings
 import Crawl.Inventory
 import Crawl.Move
+import Crawl.Status
 
-upgradeEquipment :: Inventory -> Equipment -> Bool -> Maybe Move
-upgradeEquipment inv equip berserk =
-  (if berserk then fmap (const Rest) else id) $
+upgradeEquipment :: Inventory -> Equipment -> Player -> Maybe Move -> Maybe Move
+upgradeEquipment inv equip player morsel =
+  (if isBerserk player then fmap (const Rest) else id) $
   case [ (equipSlot, invSlot, oldInvSlot)
        | let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv),
          equipSlot <- availableSlots,
          let oldInvSlot = M.lookup equipSlot equip,
-         maybe True (not . cursed) $ (`M.lookup` inv) =<< oldInvSlot,
+         maybe True canUnwield $ (`M.lookup` inv) =<< oldInvSlot,
          not (equipSlot == EQ_BODY_ARMOUR && maybe False cursed ((`M.lookup` inv) =<< M.lookup EQ_CLOAK equip)),
          let invSlot = maximumBy (comparing score) $ map fst $
                        filter ((== Just equipSlot) . equipmentSlot . itemType . snd) $
                        M.toList inv,
          score invSlot > maybe 0 score oldInvSlot ] of
-    (EQ_WEAPON, invSlot, _) : _ -> Just (Wield invSlot)
+    (EQ_WEAPON, invSlot, _) : _
+      | isVampiric (inv M.! invSlot) && hungerLevel player < HS_FULL
+        -> morsel      -- Eat food if possible, otherwise go find some
+      | otherwise -> Just (Wield invSlot)
     (_, _, Just oldInvSlot) : _ -> Just (TakeOff oldInvSlot)
     (_, invSlot, Nothing) : _ -> Just (Wear invSlot)
     [] -> Nothing
-    where score slot = itemScore (itemType $ inv M.! slot)
+    where score slot = itemScore (inv M.! slot)
 
 isEquipmentUpgrade :: Inventory -> ItemType -> Bool
 isEquipmentUpgrade inv item = case equipmentSlot item of
-  Just equipSlot -> itemScore item > maximum (0 : map itemScore [ i | i <- map itemType (M.elems inv), equipmentSlot i == Just equipSlot ])
+  Just equipSlot -> itemTypeScore item > maximum (0 : map itemScore [ i | i <- M.elems inv, equipmentSlot (itemType i) == Just equipSlot ])
   Nothing -> False
+
+canUnwield :: Item -> Bool
+canUnwield item = not (cursed item) && not (isVampiric item)
 
 -- This gets called after upgradeEquipment,
 -- so anything that goes in a slot we have filled must be junk
+-- (unless it's vampiric and we can't eat enough yet)
 dropJunkEquipment :: Inventory -> Equipment -> Maybe Move
 dropJunkEquipment inv equip =
   case [ invSlot
        | (invSlot, item) <- M.toList inv,
+         not $ isVampiric item,
          Just equipSlot <- return (equipmentSlot $ itemType item),
          Just otherSlot <- return (M.lookup equipSlot equip),
          not $ cursed $ inv M.! otherSlot,
@@ -72,10 +81,13 @@ equipmentSlot (ItemArmour b)
     Just EQ_BODY_ARMOUR
 equipmentSlot _ = Nothing
 
-itemScore :: ItemType -> Int
-itemScore (ItemWeapon w) = baseDamage w
-itemScore (ItemArmour a) = 2 * baseAC a - baseEVP a
-itemScore _ = 1
+itemScore :: Item -> Int
+itemScore item = itemTypeScore (itemType item) + if isVampiric item then 100 else 0
+
+itemTypeScore :: ItemType -> Int
+itemTypeScore (ItemWeapon w) = baseDamage w
+itemTypeScore (ItemArmour a) = 2 * baseAC a - baseEVP a
+itemTypeScore _ = 1
 
 -- Should automatically generate all of these from crawl...
 
