@@ -5,6 +5,7 @@ module Crawl.Messages (
   messagesOf
   ) where
 
+import Control.Applicative ((<$>))
 import Control.Monad (guard)
 import Data.Maybe (fromMaybe)
 
@@ -24,9 +25,13 @@ data Message = Message {
   _msgTurn :: !Int
   } deriving (Show)
 
--- XXX also have access to turn count
 messagesOf :: R.Event t A.Value -> R.Event t Message
-messagesOf input =
+messagesOf input = R.filterApply ((\turn -> (>= turn) . _msgTurn) <$> latestTurn) rawMessages
+  where rawMessages = rawMessagesOf input
+        latestTurn = R.stepper 0 (_msgTurn <$> rawMessages)
+
+rawMessagesOf :: R.Event t A.Value -> R.Event t Message
+rawMessagesOf input =
   R.spill $
   filterBy (\msg -> do
                guard $ msg ^? key "msg" == Just "msgs"

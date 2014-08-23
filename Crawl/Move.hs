@@ -35,6 +35,7 @@ data Move = Go !Int !Int
           | Wear InventorySlot
           | TakeOff InventorySlot
           | Quaff InventorySlot
+          | Read InventorySlot
           | ScanBigStack
           | ScanItem !Int !Int
           | LookHere
@@ -122,6 +123,10 @@ moveProgram (Quaff slot) = do
   press "q"
   expectMenu (== "<white>Drink which item?")
   press (T.singleton $ slotLetter slot)
+moveProgram (Read slot) = do
+  press "r"
+  expectMenu (== "<white>Read which item?")
+  press (T.singleton $ slotLetter slot)
 moveProgram ScanBigStack = moveProgram (PickUp (const False))
 moveProgram (ScanItem dx dy) = do
   -- todo: send this all in a single message
@@ -155,6 +160,8 @@ sendMoves move messages inputModeChanged menu
           = ([], press "s" >> prog)
         handleMessage message prog
           | "<cyan>Butcher " `T.isPrefixOf` message = ([Right "a"], prog)
+        handleMessage "<cyan>Blink to where?<lightgrey>" prog = ([Right "\ESC"], prog)
+        handleMessage "<cyan>What kind of item would you like to acquire? (\\ to view known items)<lightgrey>" prog = ([], press "b" >> prog)
         handleMessage message prog = (,) [] $ case view prog of
           ExpectPrompt m :>>= prog' | message == m -> prog' ()
           _ -> prog
@@ -175,7 +182,12 @@ sendMoves move messages inputModeChanged menu
         handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())
         handleMenu (_menuTag -> "shop") prog = ([], press "\ESC" >> prog)
         handleMenu (_menuTitle -> title) prog
-          | "<white>Inventory: " `T.isPrefixOf` title = ([Right " "], prog)
+          | "<white>Inventory: " `T.isPrefixOf` title = ([Right "\ESC"], prog)
+        handleMenu mn prog
+          | _menuTitle mn `elem` ["<white>Identify which item? (\\ to view known items)",
+                                  "<white>Enchant which item?", "<white>Enchant which weapon?",
+                                  "<white>Brand which weapon?"]
+          = ([Right (anyItem mn)], prog)
         handleMenu (_menuTitle -> title) prog = case view prog of
           ExpectMenu f :>>= prog' | f title -> peel (prog' ())
           _ -> ([], prog)

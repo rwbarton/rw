@@ -57,6 +57,9 @@ itemTypeNames = [
   -- potions
   ("potion", ItemPotion Nothing),
 
+  -- scrolls
+  ("scroll", ItemScroll Nothing),
+
   -- others
   ("gold piece", ItemGold)
   ]

@@ -144,6 +144,7 @@ wantItemPickup :: Inventory -> ItemType -> Bool
 wantItemPickup _ ItemGold = True
 wantItemPickup _ (ItemFood _) = True
 wantItemPickup _ (ItemPotion _) = True
+wantItemPickup _ (ItemScroll _) = True
 wantItemPickup inv item = isEquipmentUpgrade inv item
 
 sacrificable :: T.Text -> Bool
