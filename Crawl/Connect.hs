@@ -48,7 +48,8 @@ connectToWebtiles config = do
       Binary compressed <- receiveDataMessage connection
       liftIO $ do
         decompressed <- fmap jsonHack $ decompress inflator compressed
-        -- BL.putStrLn decompressed
+        BL.putStr decompressed
+        putStr "\n"
         writeChan sendIncoming $
           fromMaybe (error "JSON decoding error") (A.decode decompressed)
   return (sendOutgoing, recvIncoming)
