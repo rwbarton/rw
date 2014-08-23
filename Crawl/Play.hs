@@ -22,6 +22,7 @@ import qualified Reactive.Banana as R
 import qualified Reactive.Banana.Frameworks as R
 import qualified Data.Text as T
 
+import Crawl.Backoff
 import Crawl.BadForms
 import Crawl.BananaUtils
 import Crawl.Bindings
@@ -158,13 +159,14 @@ setupNetwork recvHandler sendHandler = do
                  MONS_JORGRUN, MONS_DRACONIAN_SHIFTER, MONS_CACODEMON, MONS_PANDEMONIUM_LORD, MONS_ERESHKIGAL] ++
                 [MONS_SIGMUND, MONS_GRINDER]
 
+      moveFailures = filterBy (\(t, (t', lm), im) -> guard (im == MOUSE_MODE_COMMAND && t == t') >> return (lm,t)) $
+                     (,,) <$> (_time <$> player) <*> lastMove R.<@> inputModeEvents
+
       exploreWithAuto =
-        (\ll l lm t ->
-          case explore ll l of
-            Nothing -> Nothing
-            Just e -> case lm of
-              (t', AutoExplore) | t' == t -> Just e
-              _ -> Just AutoExplore) <$> level <*> loc <*> lastMove <*> (_time <$> player)
+        (\ll l b -> (if b then id else const AutoExplore) <$> explore ll l)
+        <$> level <*> loc <*> backoff isAutoExplore moveFailures (_time <$> player)
+        where isAutoExplore AutoExplore = True
+              isAutoExplore _ = False
 
       killWithTab =
         (\ll l p lm t ->
