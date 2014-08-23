@@ -78,11 +78,11 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance DNGN_ENTER_WIZLAB = True
 
         isBranchEntrance DNGN_ENTER_LAIR = True
-        isBranchEntrance DNGN_ENTER_SNAKE = not $ beenTo "Snake"
+        isBranchEntrance DNGN_ENTER_SNAKE = not $ beenTo "Snake Pit"
         isBranchEntrance DNGN_ENTER_SWAMP = not $ beenTo "Swamp"
         isBranchEntrance DNGN_ENTER_SHOALS = not $ beenTo "Shoals"
-        isBranchEntrance DNGN_ENTER_SPIDER = not $ beenTo "Spider"
-        isBranchEntrance DNGN_ENTER_SLIME = not $ beenTo "Slime"
+        isBranchEntrance DNGN_ENTER_SPIDER = not $ beenTo "Spider Nest"
+        isBranchEntrance DNGN_ENTER_SLIME = not $ beenTo "Slime Pits"
 
         -- leave these places immediately
         isBranchEntrance DNGN_RETURN_FROM_SNAKE = True
