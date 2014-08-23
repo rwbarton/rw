@@ -57,7 +57,8 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
           where cellMsgs = withCoordinates $ msg ^.. key "cells"._Array.traverse
                 updateCell (coord, cellMsg) = do
                   F.mapM_ (\feat -> do
-                              when (feat == DNGN_UNSEEN) (error "server set dungeon feature to DNGN_UNSEEN")
+                              -- XXX this happens in the abyss, deal with it somehow
+                              -- when (feat == DNGN_UNSEEN) (error "server set dungeon feature to DNGN_UNSEEN")
                               oldLevel <- use levelMap
                               levelMap.at coord .= Just feat
                               level <- use levelMap
