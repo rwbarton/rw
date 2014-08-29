@@ -150,6 +150,7 @@ setupNetwork recvHandler sendHandler = do
               meleeThreat MONS_ORC_WARRIOR = 6
               meleeThreat MONS_GOLIATH_BEETLE = 10
               meleeThreat MONS_HILL_GIANT = 10
+              meleeThreat MONS_HYDRA = 16
               meleeThreat MONS_PLAYER_GHOST = 27
               meleeThreat _ = 0
               dist (Coord x1 y1) (Coord x2 y2) = max (abs (x1 - x2)) (abs (y1 - y2))
