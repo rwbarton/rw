@@ -124,6 +124,7 @@ thingsThatAreHereMessages :: R.Event t Message -> R.Event t a -> R.Event t [T.Te
 thingsThatAreHereMessages messages commandMode =
   R.filterJust . fst . R.mapAccum Nothing $ fmap handleMessage messages `R.union` fmap handleCommandMode commandMode
   where handleMessage Message { _msgChannel = MSGCH_FLOOR_ITEMS, _msgText = "<lightgrey>Things that are here:<lightgrey>" } Nothing = (Nothing, Just [])
+        handleMessage Message { _msgChannel = MSGCH_PLAIN, _msgText = "<lightgrey>There are no objects that can be picked up here.<lightgrey>" } Nothing = (Nothing, Just [])
         handleMessage Message { _msgChannel = MSGCH_PLAIN, _msgText = item } acc = (\x -> (x, x)) (fmap (++ [item]) acc)
         -- ugh. we have to do it this way because the floorItems must be updated *before* the input_mode = 0 event arrives,
         -- or we will choose a move based on the old value.
