@@ -1,7 +1,9 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Crawl.Equipment where
 
 import Data.List (maximumBy, nub)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, listToMaybe)
 import Data.Ord (comparing)
 
 import qualified Data.Map as M
@@ -19,12 +21,12 @@ upgradeEquipment inv equip player morsel =
          let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv'),
          equipSlot <- availableSlots,
          let oldInvSlot = M.lookup equipSlot equip,
-         maybe True canUnwield $ (`M.lookup` inv) =<< oldInvSlot,
-         not (equipSlot == EQ_BODY_ARMOUR && maybe False cursed ((`M.lookup` inv) =<< M.lookup EQ_CLOAK equip)),
          let invSlot = maximumBy (comparing score) $ map fst $
                        filter ((== Just equipSlot) . equipmentSlot . itemType . snd) $
                        M.toList inv',
          score invSlot > maybe 0 score oldInvSlot ] of
+    (_, _, (>>= (`M.lookup` inv)) -> Just oldItem) : _
+      | cursed oldItem -> uncurse
     (EQ_WEAPON, invSlot, _) : _
       | isVampiric (inv M.! invSlot) && hungerLevel player < HS_FULL
         -> morsel      -- Eat food if possible, otherwise go find some
@@ -33,6 +35,7 @@ upgradeEquipment inv equip player morsel =
     (_, invSlot, Nothing) : _ -> Just (Wear invSlot)
     [] -> Nothing
     where score slot = itemScore (inv M.! slot)
+          uncurse = listToMaybe [ Read slot | (slot, itemType -> ItemScroll (Just SCR_REMOVE_CURSE)) <- M.toList inv ]
 
 isEquipmentUpgrade :: Inventory -> ItemType -> Bool
 isEquipmentUpgrade inv item = case equipmentSlot item of
