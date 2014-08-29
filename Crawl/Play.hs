@@ -157,7 +157,7 @@ setupNetwork recvHandler sendHandler = do
 
       trogsHand =
         (\p l -> do
-            guard (not (hasStatus "Regen MR" p) && canTrogsHand p)
+            guard (not (hasStatus "Regen MR++" p) && canTrogsHand p)
             let monstersInView = [ _monsterType mon | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)) ]
             guard $ isPoisoned p && _hp p <= 2 || not (null $ monstersInView `intersect` trogsHandMonsters)
             return TrogsHand) <$> player <*> level
