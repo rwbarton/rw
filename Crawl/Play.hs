@@ -131,10 +131,12 @@ setupNetwork recvHandler sendHandler = do
       berserk =
         (\p ll l -> do
             guard $ canBerserk p
-            let monstersInView = [ (_monsterType mon, dist sq l)
-                                 | sq <- HS.toList $ _levelLOS ll, Just mon <- return (H.lookup sq (_levelMonsters ll)) ]
+            let monstersInView = [ (monType, dist sq l)
+                                 | sq <- HS.toList $ _levelLOS ll,
+                                   Just (_monsterType -> monType) <- return (H.lookup sq (_levelMonsters ll)),
+                                   not $ nonthreatening monType ]
             guard $ not . null $ monstersInView
-            guard $ (2 * _hp p < _mhp p && canBerserk p)
+            guard $ 2 * _hp p < _mhp p
               || sum [ meleeThreat m | (m, d) <- monstersInView, d <= 2] >= _xl p
             return Berserk) <$> player <*> level <*> loc
         where meleeThreat MONS_GNOLL = 1
@@ -153,6 +155,8 @@ setupNetwork recvHandler sendHandler = do
               meleeThreat MONS_HYDRA = 16
               meleeThreat MONS_PLAYER_GHOST = 27
               meleeThreat _ = 0
+              nonthreatening m = m `elem` [MONS_TOADSTOOL, MONS_FUNGUS, MONS_PLANT, MONS_BUSH,
+                                           MONS_BALLISTOMYCETE, MONS_HYPERACTIVE_BALLISTOMYCETE]
               dist (Coord x1 y1) (Coord x2 y2) = max (abs (x1 - x2)) (abs (y1 - y2))
 
       trogsHand =
