@@ -39,6 +39,7 @@ data Move = Go !Int !Int
           | ScanBigStack
           | ScanItem !Int !Int
           | LookHere
+          | Dump
 
 
 data SendOp a where
@@ -138,6 +139,7 @@ moveProgram (ScanItem dx dy) = do
   go dx dy
   press "\ESC"
 moveProgram LookHere = press ";"
+moveProgram Dump = press "#"
 
 useAbility :: T.Text -> Send ()
 useAbility a = do

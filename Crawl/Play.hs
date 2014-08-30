@@ -202,8 +202,12 @@ setupNetwork recvHandler sendHandler = do
         R.accumB HS.empty $
         (HS.insert . _place <$> player) R.<@ moves
 
+      lastDump = R.stepper 0 $ (_time <$> player) R.<@ R.filterE (\mv -> case mv of { Dump -> True; _ -> False }) moves
+      dump = (\l t -> guard (t `div` 10000 > l `div` 10000) >> Just Dump) <$> lastDump <*> (_time <$> player)
+
 
       move = foldr (liftA2 (flip fromMaybe)) (pure Rest) $ map (fmap filterLegalInForm player <*>) [
+        dump,
         scanFloorItems <$> level <*> loc <*> floorItems,
         berserk,
         trogsHand,
