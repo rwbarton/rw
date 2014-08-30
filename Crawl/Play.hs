@@ -217,6 +217,7 @@ setupNetwork recvHandler sendHandler = do
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
+        enchantEquipment <$> inv <*> equip,
         exploreWithAuto,
         identify <$> inv <*> player,
         descend <$> level <*> loc

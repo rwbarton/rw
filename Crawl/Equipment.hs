@@ -61,6 +61,10 @@ dropJunkEquipment inv equip =
     invSlot : _ -> Just (Drop invSlot)
     [] -> Nothing
 
+enchantEquipment :: Inventory -> Equipment -> Maybe Move
+enchantEquipment inv _equip =
+  -- Presumably we always have something to enchant
+  listToMaybe [ Read slot | (slot, itemType -> ItemScroll (Just s)) <- M.toList inv, s `elem` [SCR_ENCHANT_WEAPON, SCR_ENCHANT_ARMOUR] ]
 
 equipmentSlot :: ItemType -> Maybe EquipmentSlot
 equipmentSlot (ItemWeapon _) = Just EQ_WEAPON
