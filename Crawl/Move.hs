@@ -167,6 +167,8 @@ sendMoves move messages inputModeChanged menu
           _ -> prog
         handleInputMode :: Move -> MouseMode -> Send () -> ([Either Move T.Text], Send ())
         handleInputMode mv MOUSE_MODE_COMMAND prog = first (Left mv :) $ case view prog of
+          -- XXX Mega Hack
+          _ -> peel $ moveProgram mv
           SetPickupFunc _ :>>= (view . ($ ()) -> Return ()) -> peel $ moveProgram mv
           Return () -> peel $ moveProgram mv
           _ -> error "desynchronized in sendMoves!"
