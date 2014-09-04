@@ -120,7 +120,7 @@ setupNetwork recvHandler sendHandler = do
         (\l i wi -> do
             (_, is) <- H.lookup l i
             guard $ any wi . knownItems $ is
-            return (PickUp wi)) <$> loc <*> floorItems <*> (fmap wantItem inv)
+            return (PickUp wi)) <$> loc <*> floorItems <*> (fmap (wantItem False) inv)
 
       corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
       useCorpse = (\l c p ->
@@ -244,10 +244,11 @@ setupNetwork recvHandler sendHandler = do
         eat,
         useCorpse,
         burnBooks,
-        rest,
         pickup,
+        loot True <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
+        rest,
         enterBranches <$> level <*> loc <*> beenTo,
-        loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
+        loot False <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
         enchantEquipment <$> inv <*> equip,

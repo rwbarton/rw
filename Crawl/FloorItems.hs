@@ -136,11 +136,10 @@ thingsThatAreHereMessages messages commandMode =
 
 -- The rest should probably get split out into its own module.
 
-wantItem :: Inventory -> T.Text -> Bool
-wantItem inv itemName
-  = maybe False (wantItemPickup inv) (parseItemType itemName) ||
+wantItem :: Bool -> Inventory -> T.Text -> Bool
+wantItem corpsesOnly inv itemName
+  = not corpsesOnly && maybe False (wantItemPickup inv) (parseItemType itemName) ||
     sacrificable itemName
-    -- "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)
 
 wantItemPickup :: Inventory -> ItemType -> Bool
 wantItemPickup _ ItemGold = True
