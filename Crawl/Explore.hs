@@ -4,6 +4,7 @@ module Crawl.Explore (
   kill, explore, loot, enterBranches, descend
   ) where
 
+import Data.List (isPrefixOf)
 import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
@@ -25,7 +26,8 @@ pathfind goals info loc@(Coord lx ly) = fmap (tail . reverse . map unC) $ aStar 
         adj (C (Coord x y)) = S.fromList [ C target
                                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
                                            let target = Coord (x+dx) (y+dy),
-                                           maybe False isPassable (H.lookup target level) ]
+                                           maybe False isPassable (H.lookup target level),
+                                           maybe True isCloudSafe (H.lookup target (_levelClouds info)) ]
         cost _ START = error "pathfind: START unreachable"
         cost _ (C target) = maybe 0 movementCost (H.lookup target level)
                             + maybe 0 (plantPenalty . _monsterType) (H.lookup target $ _levelMonsters info)
@@ -135,3 +137,15 @@ movementCost DNGN_RUNED_DOOR = 10000
 movementCost DNGN_CLOSED_DOOR = 2
 movementCost DNGN_SHALLOW_WATER = 2
 movementCost _ = 1
+
+-- XXX Memoize this
+isCloudSafe :: Tile -> Bool
+isCloudSafe c = not $ any (`isBaseNameOf` show c)
+  ["TILE_CLOUD_FIRE", "TILE_CLOUD_COLD",
+   -- poison, meph, miasma okay for gr
+   "TILE_CLOUD_MUTAGENIC", "TILE_CLOUD_CHAOS",
+   "TILE_CLOUD_RAGING_WINDS",
+   -- petrification okay for gr
+   "TILE_CLOUD_FOREST_FIRE", "TILE_CLOUD_GHOSTLY_FLAME",
+   "TILE_CLOUD_ACID", "TILE_CLOUD_STORM", "TILE_CLOUD_NEG"]
+  where name `isBaseNameOf` s = name == s || (name ++ "_") `isPrefixOf` s

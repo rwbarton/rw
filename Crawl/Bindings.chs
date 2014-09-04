@@ -8,6 +8,7 @@ module Crawl.Bindings where
 
 {# enum msg_channel_type as MsgChannel {} deriving (Eq, Show) #}
 
+{# enum tile_main_type as Tile {} deriving (Eq, Show) #}
 
 -- Gameplay enums
 
