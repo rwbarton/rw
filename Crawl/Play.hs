@@ -128,6 +128,29 @@ setupNetwork recvHandler sendHandler = do
                     return (if hungerLevel p < HS_SATIATED then Butcher else Pray)) <$> loc <*> corpses <*> player
       -- 'loot' is responsible for getting us to the corpse
 
+      threatened =
+        (\ll l ->
+            let monstersInView = [ (monType, dist sq l)
+                                 | sq <- HS.toList $ _levelLOS ll,
+                                   Just (_monsterType -> monType) <- return (H.lookup sq (_levelMonsters ll)),
+                                   not $ nonthreatening monType ]
+            in not . null $ monstersInView) <$> level <*> loc
+      nonthreatening m = m `elem` [MONS_TOADSTOOL, MONS_FUNGUS, MONS_PLANT, MONS_BUSH,
+                                   MONS_BALLISTOMYCETE, MONS_HYPERACTIVE_BALLISTOMYCETE]
+      dist (Coord x1 y1) (Coord x2 y2) = max (abs (x1 - x2)) (abs (y1 - y2))
+
+      cureConfusion =
+        (\t p i -> do
+            guard (t && isConfused p && not (isBerserk p))
+            slot <- listToMaybe [ slot | (slot, itemType -> ItemPotion (Just POT_CURING)) <- M.toList i ]
+            return $ Quaff slot) <$> threatened <*> player <*> inv
+
+      healWounds =
+        (\t p i -> do
+            guard (t && (2 * _hp p < _mhp p) && not (isBerserk p))
+            slot <- listToMaybe [ slot | (slot, itemType -> ItemPotion (Just POT_HEAL_WOUNDS)) <- M.toList i ]
+            return $ Quaff slot) <$> threatened <*> player <*> inv
+
       berserk =
         (\p ll l -> do
             guard $ canBerserk p
@@ -155,9 +178,6 @@ setupNetwork recvHandler sendHandler = do
               meleeThreat MONS_HYDRA = 16
               meleeThreat MONS_PLAYER_GHOST = 27
               meleeThreat _ = 0
-              nonthreatening m = m `elem` [MONS_TOADSTOOL, MONS_FUNGUS, MONS_PLANT, MONS_BUSH,
-                                           MONS_BALLISTOMYCETE, MONS_HYPERACTIVE_BALLISTOMYCETE]
-              dist (Coord x1 y1) (Coord x2 y2) = max (abs (x1 - x2)) (abs (y1 - y2))
 
       trogsHand =
         (\p l -> do
@@ -209,7 +229,9 @@ setupNetwork recvHandler sendHandler = do
       move = foldr (liftA2 (flip fromMaybe)) (pure Rest) $ map (fmap filterLegalInForm player <*>) [
         dump,
         scanFloorItems <$> level <*> loc <*> floorItems,
+        cureConfusion,
         berserk,
+        healWounds,
         trogsHand,
         killInvisible,
         killWithTab,
