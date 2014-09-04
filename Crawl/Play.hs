@@ -128,6 +128,12 @@ setupNetwork recvHandler sendHandler = do
                     return (if hungerLevel p < HS_SATIATED then Butcher else Pray)) <$> loc <*> corpses <*> player
       -- 'loot' is responsible for getting us to the corpse
 
+      burnBooks =
+        (\fi l p -> do
+            guard (any isBook $ concatMap (knownItems . snd . snd) . filter ((/= l) . fst) $ H.toList fi)
+            guard $ not (isConfused p)
+            return BurnBooks) <$> floorItems <*> loc <*> player
+
       threatened =
         (\ll l ->
             let monstersInView = [ (monType, dist sq l)
@@ -237,6 +243,7 @@ setupNetwork recvHandler sendHandler = do
         killWithTab,
         eat,
         useCorpse,
+        burnBooks,
         rest,
         pickup,
         enterBranches <$> level <*> loc <*> beenTo,

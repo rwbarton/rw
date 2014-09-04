@@ -4,7 +4,7 @@ module Crawl.FloorItems (
   Items(..), knownItems, possiblyAny,
   trackFloorItems, scanFloorItems,
   wantItem, wantItemPickup,
-  sacrificable
+  sacrificable, isBook
   ) where
 
 import Control.Applicative ((<$>), (<*>), liftA2)
@@ -93,6 +93,7 @@ trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE 
         handleMove l Butcher = H.delete l
         handleMove l Pray = H.delete l
         handleMove l (PickUp _) = H.delete l
+        handleMove _ BurnBooks = const H.empty -- trigger rescan; XXX just delete books
         handleMove _ GoDown = const H.empty
         handleMove _ _ = id
 
@@ -150,3 +151,6 @@ wantItemPickup inv item = isEquipmentUpgrade inv item
 
 sacrificable :: T.Text -> Bool
 sacrificable itemName = "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)
+
+isBook :: T.Text -> Bool
+isBook itemName = " book" `T.isInfixOf` itemName
