@@ -104,6 +104,9 @@ isPoisoned = hasStatus "Pois"
 isMesmerised :: Player -> Bool
 isMesmerised = hasStatus "Mesm"
 
+isSilenced :: Player -> Bool
+isSilenced = hasStatus "Sil"
+
 hungerLevel :: Player -> HungerLevel
 hungerLevel p = fromMaybe HS_SATIATED $
                 fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [HS_STARVING ..]))
