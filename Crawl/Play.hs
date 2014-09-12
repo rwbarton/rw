@@ -102,7 +102,7 @@ setupNetwork recvHandler sendHandler = do
       eatChunk =
         (\p i -> listToMaybe $ do
             (slot, item@(itemData -> ItemFood FOOD_CHUNK)) <- M.toList i
-            guard $ not (itemColor item `elem` [10, 12, 8])
+            guard $ not (itemColor item `elem` [LIGHTGREEN, LIGHTRED, DARKGRAY])
             guard $ hungerLevel p < HS_SATIATED -- for normal races
             return $ Eat slot) <$> player <*> inv
       eatPermafood =

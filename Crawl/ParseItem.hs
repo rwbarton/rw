@@ -11,7 +11,7 @@ import Crawl.Bindings
 import Crawl.Item
 
 parseItem :: T.Text -> Item
-parseItem itemName = Item (fromMaybe ItemJunk (parseItemData itemName)) 1 7 Nothing
+parseItem itemName = Item (fromMaybe ItemJunk (parseItemData itemName)) 1 LIGHTGRAY Nothing
                      -- XXX extract the real color, cursed status
 
 parseItemData :: T.Text -> Maybe ItemData

@@ -11,7 +11,7 @@ import Data.Char (chr, ord)
 import Control.Monad.Trans.State (execState)
 import Data.Foldable (forM_)
 
-import Control.Lens (makeLenses, iforMOf_, itraversed, (^?), ix, (.=), at, (^.))
+import Control.Lens (makeLenses, iforMOf_, itraversed, enum, (^?), ix, (.=), at, (^.), to)
 import Data.Aeson.Lens (key, _Object, _Integer, _String)
 import Data.Bits.Lens (bitAt)
 import Numeric.Lens (integral)
@@ -60,13 +60,15 @@ inventoryItemData InventoryItem { _ii_base_type = bt, _ii_sub_type = st } = case
           let t = toEnum s in if t `elem` unknowns then Nothing else Just t
 
 inventoryItem :: InventoryItem -> Item
-inventoryItem ii = Item (inventoryItemData ii) (ii ^. ii_quantity) (ii ^. ii_col) cursedStatus
+inventoryItem ii = Item (inventoryItemData ii) (ii ^. ii_quantity) (ii ^. ii_col.to fixMinusOne.enum) cursedStatus
   where cursedStatus = if not (ii ^. ii_flags.bitAt 0) -- ISFLAG_KNOW_CURSE
                        then Nothing
                        else Just $
                             if ii ^. ii_flags.bitAt 8 -- ISFLAG_CURSED
                             then Cursed
                             else Uncursed
+        fixMinusOne (-1) = 7    -- -1 means no menu color matched; default to 7 = LIGHTGRAY
+        fixMinusOne c = c
 
 
 newtype InventorySlot = InventorySlot Int deriving (Eq, Ord, Show)
@@ -80,7 +82,7 @@ slotLetter (InventorySlot n)
   | otherwise         = error $ "inventory slot " ++ show n ++ " out of range 0-51"
 
 emptySlot :: InventoryItem
-emptySlot = InventoryItem 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)" 0
+emptySlot = InventoryItem 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)" (-1)
 
 emptyInventory :: RawInventory
 emptyInventory = M.fromList [ (InventorySlot slot, emptySlot) | slot <- [0..51] ]

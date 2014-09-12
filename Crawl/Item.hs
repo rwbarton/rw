@@ -25,7 +25,6 @@ data ItemData = ItemWeapon WeaponType
                 -- and don't know how to parse yet
               deriving Eq
 
-type Color = Int
 data CurseStatus = Uncursed | Cursed
 
 data Item = Item ItemData Int Color (Maybe CurseStatus)
@@ -38,7 +37,7 @@ itemData (Item d _ _ _) = d
 itemCount :: Item -> Int
 itemCount (Item _ count _ _) = count
 
-itemColor :: Item -> Int
+itemColor :: Item -> Color
 itemColor (Item _ _ color _) = color
 
 knownCursed :: Item -> Bool

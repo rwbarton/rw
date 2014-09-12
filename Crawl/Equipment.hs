@@ -18,7 +18,7 @@ upgradeEquipment :: Inventory -> Equipment -> Player -> Maybe Move -> Maybe Move
 upgradeEquipment inv equip player morsel =
   (if isBerserk player then fmap (const Rest) else id) $
   case [ (equipSlot, invSlot, oldInvSlot)
-       | let inv' = M.filter ((/= 8) . itemColor) inv, -- ignore unwearable items
+       | let inv' = M.filter ((/= DARKGRAY) . itemColor) inv, -- ignore unwearable items
          let availableSlots = nub $ mapMaybe equipmentSlot (M.elems inv'),
          equipSlot <- availableSlots,
          let oldInvSlot = M.lookup equipSlot equip,
