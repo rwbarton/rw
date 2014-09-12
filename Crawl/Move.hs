@@ -178,9 +178,11 @@ sendMoves move messages inputModeChanged menu
         handleInputMode mv MOUSE_MODE_COMMAND prog = first (Left mv :) $ case view prog of
           -- XXX Mega Hack
           _ -> peel $ moveProgram mv
+{-
           SetPickupFunc _ :>>= (view . ($ ()) -> Return ()) -> peel $ moveProgram mv
           Return () -> peel $ moveProgram mv
           _ -> error "desynchronized in sendMoves!"
+-}
         handleInputMode _ MOUSE_MODE_MORE prog = ([Right " "], prog)
         handleInputMode _ MOUSE_MODE_PROMPT prog = case peel prog of
           ([], _) -> error "out of input in sendMoves!"
