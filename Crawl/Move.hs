@@ -161,7 +161,10 @@ sendMoves move messages inputModeChanged menu
   where handleMessage :: T.Text -> Send () -> ([Either Move T.Text], Send ())
         handleMessage message prog
           | "<cyan>Eat " `T.isPrefixOf` message && " (ye/n/q/i?)<lightgrey>" `T.isSuffixOf` message = ([Right "n"], prog) -- ew, don't eat off the ground
-        handleMessage (T.stripPrefix "<cyan>Pick up " -> Just itemName) prog = ([], answerYesNo itemName >> prog)
+        handleMessage
+          (T.stripPrefix "<cyan>Pick up " ->
+           Just (T.stripSuffix "? ((y)es/(n)o/(a)ll/(m)enu/*?g,/q)<lightgrey>" -> Just itemName)) prog =
+            ([], answerYesNo itemName >> prog)
         handleMessage "<cyan>Increase (S)trength, (I)ntelligence, or (D)exterity? <lightgrey>" prog
           = ([], press "s" >> prog)
         handleMessage message prog

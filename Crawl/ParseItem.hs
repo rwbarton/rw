@@ -8,11 +8,16 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 
 import Crawl.Bindings
+import Crawl.ColoredText
 import Crawl.Item
 
 parseItem :: T.Text -> Item
-parseItem itemName = Item (fromMaybe ItemJunk (parseItemData itemName)) 1 LIGHTGRAY Nothing
-                     -- XXX extract the real color, cursed status
+parseItem itemName = Item (fromMaybe ItemJunk (parseItemData name)) 1 color Nothing
+                     -- XXX extract the real cursed status
+  where (color, name) = case parseColoredText itemName of
+          [ct] -> ct
+          [ct, (LIGHTGRAY, ".")] -> ct
+          cts -> error $ "parseItem: item name " ++ show itemName ++ " did not parse as a single colored text: " ++ show cts
 
 parseItemData :: T.Text -> Maybe ItemData
 parseItemData itemName = fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames
