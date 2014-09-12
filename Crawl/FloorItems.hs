@@ -1,8 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DeriveFunctor, ViewPatterns #-}
 
 module Crawl.FloorItems (
-  Items(..), knownItems, possiblyAny,
-  trackFloorItems, scanFloorItems,
+  SquareItems(..), knownItems, possiblyAny,
+  FloorItems, trackFloorItems, scanFloorItems,
   wantItem, wantItemPickup,
   sacrificable, isBook
   ) where
@@ -19,32 +19,35 @@ import Crawl.BananaUtils
 import Crawl.Bindings
 import Crawl.Equipment
 import Crawl.Inventory
+import Crawl.Item
 import Crawl.LevelInfo
 import Crawl.Messages
 import Crawl.Move
 import Crawl.ParseItem
 
-data Items = Empty
-           | SingleItem T.Text
-           | UnexploredStack T.Text
-           | ExploredStack [T.Text]
-           | BigStack
+data SquareItems item =
+  Empty
+  | SingleItem item
+  | UnexploredStack item
+  | ExploredStack [item]
+  | BigStack
+  deriving (Functor)
 
-knownItems :: Items -> [T.Text]
+knownItems :: SquareItems item -> [item]
 knownItems Empty = []
 knownItems (SingleItem i) = [i]
 knownItems (UnexploredStack i) = [i]
 knownItems (ExploredStack is) = is
 knownItems BigStack = []
 
-possiblyAny :: (T.Text -> Bool) -> Items -> Bool
+possiblyAny :: (item -> Bool) -> SquareItems item -> Bool
 possiblyAny _ Empty = False
 possiblyAny f (SingleItem i) = f i
 possiblyAny _ (UnexploredStack _) = True
 possiblyAny f (ExploredStack is) = any f is
 possiblyAny _ BigStack = False
 
-type FloorItems = H.HashMap Coord (Maybe Int, Items)
+type FloorItems = H.HashMap Coord (Maybe Int, SquareItems Item)
 
 -- Store results of scanning for items.
 -- At each square, we store the result of looking at that square with 'x',
@@ -59,7 +62,9 @@ trackFloorItems :: R.Behavior t Coord ->
                    R.Event t MouseMode ->
                    R.Behavior t FloorItems
 trackFloorItems cursor level inputModeB messages0 lastMove loc moves inputModeE =
+  fmap ((fmap . fmap . fmap) parseItem) $
   -- automatically clear out entries when we can see the item is gone
+  -- XXX wouldn't it be better to remove the entry from the accumB?
   liftA2 (H.intersectionWith (flip const)) (fmap _levelItemTiles level) $
   R.accumB H.empty $
   (handleItemMessages <$> cursor <*> level R.<@> (itemMessages $ R.whenE ((== MOUSE_MODE_TARGET) <$> inputModeB) messages))
@@ -136,20 +141,22 @@ thingsThatAreHereMessages messages commandMode =
 
 -- The rest should probably get split out into its own module.
 
-wantItem :: Bool -> Inventory -> T.Text -> Bool
-wantItem corpsesOnly inv itemName
-  = not corpsesOnly && maybe False (wantItemPickup inv) (parseItemType itemName) ||
-    sacrificable itemName
+wantItem :: Bool -> Inventory -> Item -> Bool
+wantItem corpsesOnly inv item
+  = not corpsesOnly && wantItemPickup inv item || sacrificable item
 
-wantItemPickup :: Inventory -> ItemType -> Bool
-wantItemPickup _ ItemGold = True
-wantItemPickup _ (ItemFood _) = True
-wantItemPickup _ (ItemPotion _) = True
-wantItemPickup _ (ItemScroll _) = True
-wantItemPickup inv item = isEquipmentUpgrade inv item
+wantItemPickup :: Inventory -> Item -> Bool
+wantItemPickup inv item = case itemData item of
+  ItemGold -> True
+  ItemFood _ -> True
+  ItemPotion _ -> True
+  ItemScroll _ -> True
+  _ -> isEquipmentUpgrade inv item
 
-sacrificable :: T.Text -> Bool
-sacrificable itemName = "corpse" `T.isInfixOf` itemName && not ("rotting" `T.isInfixOf` itemName)
+sacrificable :: Item -> Bool
+sacrificable (itemData -> ItemCorpse _ False) = True
+sacrificable _ = False
 
-isBook :: T.Text -> Bool
-isBook itemName = " book" `T.isInfixOf` itemName
+isBook :: Item -> Bool
+isBook (itemData -> ItemBook {}) = True
+isBook _ = False

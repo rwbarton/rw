@@ -10,6 +10,7 @@ import qualified Data.Map as M
 
 import Crawl.Bindings
 import Crawl.Inventory
+import Crawl.Item
 import Crawl.Move
 import Crawl.Status
 
@@ -17,16 +18,16 @@ upgradeEquipment :: Inventory -> Equipment -> Player -> Maybe Move -> Maybe Move
 upgradeEquipment inv equip player morsel =
   (if isBerserk player then fmap (const Rest) else id) $
   case [ (equipSlot, invSlot, oldInvSlot)
-       | let inv' = M.filter ((/= 8) . itemColour) inv, -- ignore unwearable items
-         let availableSlots = nub $ mapMaybe (equipmentSlot . itemType) (M.elems inv'),
+       | let inv' = M.filter ((/= 8) . itemColor) inv, -- ignore unwearable items
+         let availableSlots = nub $ mapMaybe equipmentSlot (M.elems inv'),
          equipSlot <- availableSlots,
          let oldInvSlot = M.lookup equipSlot equip,
          let invSlot = maximumBy (comparing score) $ map fst $
-                       filter ((== Just equipSlot) . equipmentSlot . itemType . snd) $
+                       filter ((== Just equipSlot) . equipmentSlot . snd) $
                        M.toList inv',
          score invSlot > maybe 0 score oldInvSlot ] of
     (_, _, (>>= (`M.lookup` inv)) -> Just oldItem) : _
-      | cursed oldItem -> uncurse
+      | knownCursed oldItem -> uncurse
     (EQ_WEAPON, invSlot, _) : _
       | isVampiric (inv M.! invSlot) && hungerLevel player < HS_FULL
         -> morsel      -- Eat food if possible, otherwise go find some
@@ -35,15 +36,15 @@ upgradeEquipment inv equip player morsel =
     (_, invSlot, Nothing) : _ -> Just (Wear invSlot)
     [] -> Nothing
     where score slot = itemScore (inv M.! slot)
-          uncurse = listToMaybe [ Read slot | (slot, itemType -> ItemScroll (Just SCR_REMOVE_CURSE)) <- M.toList inv ]
+          uncurse = listToMaybe [ Read slot | (slot, itemData -> ItemScroll (Just SCR_REMOVE_CURSE)) <- M.toList inv ]
 
-isEquipmentUpgrade :: Inventory -> ItemType -> Bool
+isEquipmentUpgrade :: Inventory -> Item -> Bool
 isEquipmentUpgrade inv item = case equipmentSlot item of
-  Just equipSlot -> itemTypeScore item > maximum (0 : map itemScore [ i | i <- M.elems inv, equipmentSlot (itemType i) == Just equipSlot ])
+  Just equipSlot -> itemScore item > maximum (0 : map itemScore [ i | i <- M.elems inv, equipmentSlot i == Just equipSlot ])
   Nothing -> False
 
 canUnwield :: Item -> Bool
-canUnwield item = not (cursed item) && not (isVampiric item)
+canUnwield item = not (knownCursed item) && not (isVampiric item)
 
 -- This gets called after upgradeEquipment,
 -- so anything that goes in a slot we have filled must be junk
@@ -53,10 +54,10 @@ dropJunkEquipment inv equip =
   case [ invSlot
        | (invSlot, item) <- M.toList inv,
          not $ isVampiric item,
-         Just equipSlot <- return (equipmentSlot $ itemType item),
+         Just equipSlot <- return (equipmentSlot item),
          Just otherSlot <- return (M.lookup equipSlot equip),
-         not $ cursed $ inv M.! otherSlot,
-         not $ (equipSlot == EQ_BODY_ARMOUR && maybe False cursed ((`M.lookup` inv) =<< M.lookup EQ_CLOAK equip)),
+         not $ knownCursed $ inv M.! otherSlot,
+         not $ (equipSlot == EQ_BODY_ARMOUR && maybe False knownCursed ((`M.lookup` inv) =<< M.lookup EQ_CLOAK equip)),
          invSlot /= otherSlot ] of
     invSlot : _ -> Just (Drop invSlot)
     [] -> Nothing
@@ -64,35 +65,36 @@ dropJunkEquipment inv equip =
 enchantEquipment :: Inventory -> Equipment -> Maybe Move
 enchantEquipment inv _equip =
   -- Presumably we always have something to enchant
-  listToMaybe [ Read slot | (slot, itemType -> ItemScroll (Just s)) <- M.toList inv, s `elem` [SCR_ENCHANT_WEAPON, SCR_ENCHANT_ARMOUR] ]
+  listToMaybe [ Read slot | (slot, itemData -> ItemScroll (Just s)) <- M.toList inv, s `elem` [SCR_ENCHANT_WEAPON, SCR_ENCHANT_ARMOUR] ]
 
-equipmentSlot :: ItemType -> Maybe EquipmentSlot
-equipmentSlot (ItemWeapon _) = Just EQ_WEAPON
-equipmentSlot (ItemArmour ARM_CLOAK) = Just EQ_CLOAK
-equipmentSlot (ItemArmour ARM_CAP) = Just EQ_HELMET
-equipmentSlot (ItemArmour ARM_HELMET) = Just EQ_HELMET
-equipmentSlot (ItemArmour ARM_GLOVES) = Just EQ_GLOVES
-equipmentSlot (ItemArmour ARM_BOOTS) = Just EQ_BOOTS
-equipmentSlot (ItemArmour b)
-  | b `elem` [ARM_ROBE, ARM_LEATHER_ARMOUR, ARM_RING_MAIL,
-              ARM_SCALE_MAIL, ARM_CHAIN_MAIL, ARM_PLATE_ARMOUR,
-              ARM_CRYSTAL_PLATE_ARMOUR, ARM_ANIMAL_SKIN,
-              ARM_TROLL_HIDE, ARM_TROLL_LEATHER_ARMOUR,
-              ARM_FIRE_DRAGON_HIDE, ARM_FIRE_DRAGON_ARMOUR,
-              ARM_ICE_DRAGON_HIDE, ARM_ICE_DRAGON_ARMOUR,
-              ARM_STEAM_DRAGON_HIDE, ARM_STEAM_DRAGON_ARMOUR,
-              ARM_MOTTLED_DRAGON_HIDE, ARM_MOTTLED_DRAGON_ARMOUR,
-              ARM_STORM_DRAGON_HIDE, ARM_STORM_DRAGON_ARMOUR,
-              ARM_GOLD_DRAGON_HIDE, ARM_GOLD_DRAGON_ARMOUR,
-              ARM_SWAMP_DRAGON_HIDE, ARM_SWAMP_DRAGON_ARMOUR,
-              ARM_PEARL_DRAGON_HIDE, ARM_PEARL_DRAGON_ARMOUR] =
-    Just EQ_BODY_ARMOUR
-equipmentSlot _ = Nothing
+equipmentSlot :: Item -> Maybe EquipmentSlot
+equipmentSlot item = case itemData item of
+  ItemWeapon _ -> Just EQ_WEAPON
+  ItemArmour ARM_CLOAK -> Just EQ_CLOAK
+  ItemArmour ARM_CAP -> Just EQ_HELMET
+  ItemArmour ARM_HELMET -> Just EQ_HELMET
+  ItemArmour ARM_GLOVES -> Just EQ_GLOVES
+  ItemArmour ARM_BOOTS -> Just EQ_BOOTS
+  ItemArmour b
+    | b `elem` [ARM_ROBE, ARM_LEATHER_ARMOUR, ARM_RING_MAIL,
+                ARM_SCALE_MAIL, ARM_CHAIN_MAIL, ARM_PLATE_ARMOUR,
+                ARM_CRYSTAL_PLATE_ARMOUR, ARM_ANIMAL_SKIN,
+                ARM_TROLL_HIDE, ARM_TROLL_LEATHER_ARMOUR,
+                ARM_FIRE_DRAGON_HIDE, ARM_FIRE_DRAGON_ARMOUR,
+                ARM_ICE_DRAGON_HIDE, ARM_ICE_DRAGON_ARMOUR,
+                ARM_STEAM_DRAGON_HIDE, ARM_STEAM_DRAGON_ARMOUR,
+                ARM_MOTTLED_DRAGON_HIDE, ARM_MOTTLED_DRAGON_ARMOUR,
+                ARM_STORM_DRAGON_HIDE, ARM_STORM_DRAGON_ARMOUR,
+                ARM_GOLD_DRAGON_HIDE, ARM_GOLD_DRAGON_ARMOUR,
+                ARM_SWAMP_DRAGON_HIDE, ARM_SWAMP_DRAGON_ARMOUR,
+                ARM_PEARL_DRAGON_HIDE, ARM_PEARL_DRAGON_ARMOUR]
+      -> Just EQ_BODY_ARMOUR
+  _ -> Nothing
 
 itemScore :: Item -> Int
-itemScore item = itemTypeScore (itemType item) + if isVampiric item then 100 else 0
+itemScore item = itemTypeScore (itemData item) + if isVampiric item then 100 else 0
 
-itemTypeScore :: ItemType -> Int
+itemTypeScore :: ItemData -> Int
 itemTypeScore (ItemWeapon w) = baseDamage w
 itemTypeScore (ItemArmour a) = 2 * baseAC a - baseEVP a
 itemTypeScore _ = 1

@@ -2,7 +2,6 @@
 {-# OPTIONS_GHC -O #-}  -- Weird bug in GHC 7.4.2 with -O2 (#7165)
 
 module Crawl.Inventory (
-  Item, ItemType(..), itemType, cursed, isVampiric, itemColour,
   Inventory, InventorySlot, slotLetter,
   inventory,
   Equipment, equipment
@@ -22,44 +21,25 @@ import qualified Data.Text as T
 import qualified Reactive.Banana as R
 
 import Crawl.Bindings
+import Crawl.Item
 
 
-data Item = Item {
-  _base_type :: !Int,
-  _sub_type :: !Int,
-  _plus :: !Int,
-  _plus2 :: !Int,
-  _quantity :: !Int,
-  _flags :: !Int,
-  _inscription :: !T.Text,
-  _name :: !T.Text,
-  _col :: !Int
+data InventoryItem = InventoryItem {
+  _ii_base_type :: !Int,
+  _ii_sub_type :: !Int,
+  _ii_plus :: !Int,
+  _ii_plus2 :: !Int,
+  _ii_quantity :: !Int,
+  _ii_flags :: !Int,
+  _ii_inscription :: !T.Text,
+  _ii_name :: !T.Text,
+  _ii_col :: !Int
   } deriving (Eq, Show)         -- Eq for 'non'
 
-makeLenses ''Item
+makeLenses ''InventoryItem
 
--- Could move more type-dependent fields in here
--- (weapon/armour enchantments, wand charges, ...)
--- Could also use custom Unknown | Known a type instead of Maybe.
-data ItemType = ItemWeapon WeaponType
-              | ItemMissile MissileType
-              | ItemArmour ArmourType -- also has plus2 = sub-subtype
-              | ItemWand (Maybe WandType)
-              | ItemFood FoodType
-              | ItemScroll (Maybe ScrollType)
-              | ItemJewellery (Maybe JewelleryType) -- could split these
-              | ItemPotion (Maybe PotionType)
-              | ItemBook (Maybe BookType) -- includes manuals
-              | ItemStaff (Maybe StaffType)
-              | ItemOrb OrbType
-              | ItemMiscellany (Maybe MiscellanyType) -- unided = deck
-              | ItemCorpse CorpseType
-              | ItemGold
-              | ItemRod (Maybe RodType)
-              deriving Eq
-
-itemType :: Item -> ItemType
-itemType Item { _base_type = bt, _sub_type = st } = case toEnum bt of
+inventoryItemData :: InventoryItem -> ItemData
+inventoryItemData InventoryItem { _ii_base_type = bt, _ii_sub_type = st } = case toEnum bt of
   OBJ_WEAPONS    -> ItemWeapon     $ toEnum st
   OBJ_MISSILES   -> ItemMissile    $ toEnum st
   OBJ_ARMOUR     -> ItemArmour     $ toEnum st
@@ -72,25 +52,26 @@ itemType Item { _base_type = bt, _sub_type = st } = case toEnum bt of
   OBJ_STAVES     -> ItemStaff      $ maybeToEnum [NUM_STAVES] st
   OBJ_ORBS       -> ItemOrb        $ toEnum st
   OBJ_MISCELLANY -> ItemMiscellany $ maybeToEnum [NUM_MISCELLANY] st
-  OBJ_CORPSES    -> ItemCorpse     $ toEnum st
+  OBJ_CORPSES    -> error "impossible: corpse in inventory"
   OBJ_GOLD       -> ItemGold
   OBJ_RODS       -> ItemRod        $ maybeToEnum [NUM_RODS] st
   other          -> error $ "unexpected item base_type " ++ show other
   where maybeToEnum unknowns s =
           let t = toEnum s in if t `elem` unknowns then Nothing else Just t
 
-cursed :: Item -> Bool
-cursed item = item ^. flags.bitAt 8
-
-itemColour :: Item -> Int
-itemColour = _col
-
-isVampiric :: Item -> Bool
-isVampiric item = "(vamp)" `T.isInfixOf` _name item
+inventoryItem :: InventoryItem -> Item
+inventoryItem ii = Item (inventoryItemData ii) (ii ^. ii_quantity) (ii ^. ii_col) cursedStatus
+  where cursedStatus = if not (ii ^. ii_flags.bitAt 0) -- ISFLAG_KNOW_CURSE
+                       then Nothing
+                       else Just $
+                            if ii ^. ii_flags.bitAt 8 -- ISFLAG_CURSED
+                            then Cursed
+                            else Uncursed
 
 
 newtype InventorySlot = InventorySlot Int deriving (Eq, Ord, Show)
 type Inventory = M.Map InventorySlot Item
+type RawInventory = M.Map InventorySlot InventoryItem
 
 slotLetter :: InventorySlot -> Char
 slotLetter (InventorySlot n)
@@ -98,28 +79,28 @@ slotLetter (InventorySlot n)
   | 26 <= n && n < 52 = chr (ord 'A' + n - 26)
   | otherwise         = error $ "inventory slot " ++ show n ++ " out of range 0-51"
 
-emptySlot :: Item
-emptySlot = Item 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)" 0
+emptySlot :: InventoryItem
+emptySlot = InventoryItem 100 0 0 0 0 0 "" "!bad item (cl:100,ty:1,pl:0,pl2:0,sp:0,qu:0)" 0
 
-emptyInventory :: Inventory
+emptyInventory :: RawInventory
 emptyInventory = M.fromList [ (InventorySlot slot, emptySlot) | slot <- [0..51] ]
 
-dropEmptySlots :: Inventory -> Inventory
-dropEmptySlots = M.filter ((/= fromEnum OBJ_UNASSIGNED) . _base_type)
+dropEmptySlots :: RawInventory -> RawInventory
+dropEmptySlots = M.filter ((/= fromEnum OBJ_UNASSIGNED) . _ii_base_type)
 
 inventory :: R.Event t A.Value -> R.Behavior t Inventory
-inventory input = fmap dropEmptySlots $ R.accumB emptyInventory $ fmap updateInventory input
+inventory input = fmap (fmap inventoryItem . dropEmptySlots) $ R.accumB emptyInventory $ fmap updateInventory input
   where updateInventory msg = execState $ iforMOf_ (key "inv"._Object.itraversed) msg updateSlot
         updateSlot slotName (item :: A.Value) = do
-          updateIntField "base_type" base_type
-          updateIntField "sub_type" sub_type
-          updateIntField "plus" plus
-          updateIntField "plus2" plus2
-          updateIntField "quantity" quantity
-          updateIntField "flags" flags
-          updateTextField "inscription" inscription
-          updateTextField "name" name
-          updateIntField "col" col
+          updateIntField "base_type" ii_base_type
+          updateIntField "sub_type" ii_sub_type
+          updateIntField "plus" ii_plus
+          updateIntField "plus2" ii_plus2
+          updateIntField "quantity" ii_quantity
+          updateIntField "flags" ii_flags
+          updateTextField "inscription" ii_inscription
+          updateTextField "name" ii_name
+          updateIntField "col" ii_col
           where updateIntField s l = forM_ (item ^? key s._Integer.integral) $ \val -> ix slot.l .= val
                 updateTextField s l = forM_ (item ^? key s._String) $ \val -> ix slot.l .= val
                 slot = InventorySlot (read $ T.unpack slotName)

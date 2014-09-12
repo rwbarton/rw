@@ -13,8 +13,10 @@ import qualified Reactive.Banana as R
 
 import Crawl.Bindings
 import Crawl.Inventory
+import Crawl.Item
 import Crawl.Messages
 import Crawl.Menu
+import Crawl.ParseItem
 
 data Move = Go !Int !Int
           | Attack !Int !Int
@@ -25,7 +27,7 @@ data Move = Go !Int !Int
           | GoDown
           | Rest
           | LongRest
-          | PickUp (T.Text -> Bool)
+          | PickUp (Item -> Bool)
           | AutoExplore
           | AutoFight
           | Butcher
@@ -47,7 +49,7 @@ data SendOp a where
   Press :: T.Text -> SendOp ()
   ExpectPrompt :: T.Text -> SendOp ()
   ExpectMenu :: (T.Text -> Bool) -> SendOp ()
-  SetPickupFunc :: (T.Text -> Bool) -> SendOp ()
+  SetPickupFunc :: (Item -> Bool) -> SendOp ()
   AnswerYesNo :: T.Text -> SendOp ()
 
 type Send = Program SendOp
@@ -61,7 +63,7 @@ expectPrompt = singleton . ExpectPrompt
 expectMenu :: (T.Text -> Bool) -> Send ()
 expectMenu = singleton . ExpectMenu
 
-setPickupFunc :: (T.Text -> Bool) -> Send ()
+setPickupFunc :: (Item -> Bool) -> Send ()
 setPickupFunc = singleton . SetPickupFunc
 
 answerYesNo :: T.Text -> Send ()
@@ -182,7 +184,7 @@ sendMoves move messages inputModeChanged menu
           prog' -> prog'
         handleInputMode _ MOUSE_MODE_YESNO prog = case view prog of
           -- XXX this is such a hack
-          AnswerYesNo item :>>= prog'@(view . ($ ()) -> SetPickupFunc f :>>= _) -> ([Right (if f item then "y" else "n")], prog' ())
+          AnswerYesNo item :>>= prog'@(view . ($ ()) -> SetPickupFunc f :>>= _) -> ([Right (if f (parseItem item) then "y" else "n")], prog' ())
           _ -> ([Right "Y"], prog)
         handleInputMode _ _ prog = ([], prog)
         handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())

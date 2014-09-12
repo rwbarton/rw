@@ -58,7 +58,7 @@ explore info loc = case pathfind (_levelFringe info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
 
-loot :: Bool -> LevelInfo -> Coord -> H.HashMap Coord (Maybe Int, Items) -> Inventory -> Maybe Move
+loot :: Bool -> LevelInfo -> Coord -> FloorItems -> Inventory -> Maybe Move
 loot corpsesOnly info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny (wantItem corpsesOnly inv) . snd) items) info loc of
   Just [] -> Just LookHere
   Just locs@(loc' : _)

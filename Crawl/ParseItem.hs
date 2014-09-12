@@ -3,16 +3,21 @@
 module Crawl.ParseItem where
 
 import Data.List (find)
+import Data.Maybe (fromMaybe)
 
 import qualified Data.Text as T
 
 import Crawl.Bindings
-import Crawl.Inventory
+import Crawl.Item
 
-parseItemType :: T.Text -> Maybe ItemType
-parseItemType itemName = fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames
+parseItem :: T.Text -> Item
+parseItem itemName = Item (fromMaybe ItemJunk (parseItemData itemName)) 1 7 Nothing
+                     -- XXX extract the real color, cursed status
 
-itemTypeNames :: [(T.Text, ItemType)]
+parseItemData :: T.Text -> Maybe ItemData
+parseItemData itemName = fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames
+
+itemTypeNames :: [(T.Text, ItemData)]
 itemTypeNames = [
   -- weapons we care about
   ("hand axe", ItemWeapon WPN_HAND_AXE),
@@ -59,6 +64,13 @@ itemTypeNames = [
 
   -- scrolls
   ("scroll", ItemScroll Nothing),
+
+  -- corpses
+  ("rotting", ItemCorpse (error "CorpseType") True),
+  ("corpse", ItemCorpse (error "CorpseType") False),
+
+  -- books
+  ("book", ItemBook Nothing),   -- XXX technically ItemBook includes manuals also
 
   -- others
   ("gold piece", ItemGold)

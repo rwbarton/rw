@@ -31,6 +31,7 @@ import Crawl.Explore
 import Crawl.FloorItems
 import Crawl.Identify
 import Crawl.Inventory
+import Crawl.Item
 import Crawl.LevelInfo
 import Crawl.Messages
 import Crawl.Move
@@ -100,13 +101,13 @@ setupNetwork recvHandler sendHandler = do
 
       eatChunk =
         (\p i -> listToMaybe $ do
-            (slot, item@(itemType -> ItemFood FOOD_CHUNK)) <- M.toList i
-            guard $ not (itemColour item `elem` [10, 12, 8])
+            (slot, item@(itemData -> ItemFood FOOD_CHUNK)) <- M.toList i
+            guard $ not (itemColor item `elem` [10, 12, 8])
             guard $ hungerLevel p < HS_SATIATED -- for normal races
             return $ Eat slot) <$> player <*> inv
       eatPermafood =
         (\i -> listToMaybe $ do
-            (slot, (itemType -> ItemFood foodType)) <- M.toList i
+            (slot, (itemData -> ItemFood foodType)) <- M.toList i
             guard $ foodType /= FOOD_CHUNK
             return $ Eat slot) <$> inv
       eatAnything = (<|>) <$> eatChunk <*> eatPermafood
@@ -148,13 +149,13 @@ setupNetwork recvHandler sendHandler = do
       cureConfusion =
         (\t p i -> do
             guard (t && isConfused p && not (isBerserk p))
-            slot <- listToMaybe [ slot | (slot, itemType -> ItemPotion (Just POT_CURING)) <- M.toList i ]
+            slot <- listToMaybe [ slot | (slot, itemData -> ItemPotion (Just POT_CURING)) <- M.toList i ]
             return $ Quaff slot) <$> threatened <*> player <*> inv
 
       healWounds =
         (\t p i -> do
             guard (t && (2 * _hp p < _mhp p) && not (isBerserk p))
-            slot <- listToMaybe [ slot | (slot, itemType -> ItemPotion (Just POT_HEAL_WOUNDS)) <- M.toList i ]
+            slot <- listToMaybe [ slot | (slot, itemData -> ItemPotion (Just POT_HEAL_WOUNDS)) <- M.toList i ]
             return $ Quaff slot) <$> threatened <*> player <*> inv
 
       berserk =
