@@ -147,7 +147,7 @@ wantItem corpsesOnly inv item
 
 wantItemPickup :: Inventory -> Item -> Bool
 wantItemPickup inv item = case itemData item of
-  ItemGold -> True
+  ItemGold -> False
   ItemFood _ -> True
   ItemPotion _ -> True
   ItemScroll _ -> True
