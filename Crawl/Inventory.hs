@@ -7,9 +7,12 @@ module Crawl.Inventory (
   Equipment, equipment
   ) where
 
+import Control.Applicative ((<|>))
 import Data.Char (chr, ord)
 import Control.Monad.Trans.State (execState)
 import Data.Foldable (forM_)
+import Data.List (find)
+import Data.Monoid ((<>))
 
 import Control.Lens (makeLenses, iforMOf_, itraversed, enum, (^?), ix, (.=), at, (^.), to)
 import Data.Aeson.Lens (key, _Object, _Integer, _String)
@@ -39,8 +42,12 @@ data InventoryItem = InventoryItem {
 makeLenses ''InventoryItem
 
 inventoryItemData :: InventoryItem -> ItemData
-inventoryItemData InventoryItem { _ii_base_type = bt, _ii_sub_type = st } = case toEnum bt of
-  OBJ_WEAPONS    -> ItemWeapon     $ toEnum st
+inventoryItemData ii@InventoryItem { _ii_base_type = bt, _ii_sub_type = st } = case toEnum bt of
+  OBJ_WEAPONS    -> ItemWeapon     (toEnum st) plus brand
+    where plus
+            | ii ^. ii_flags.bitAt 2 = Just $ ii ^. ii_plus
+            | otherwise              = Nothing
+          brand = parseTerseBrand (ii ^. ii_name) <|> fmap (const SPWPN_NORMAL) plus
   OBJ_MISSILES   -> ItemMissile    $ toEnum st
   OBJ_ARMOUR     -> ItemArmour     $ toEnum st
   OBJ_WANDS      -> ItemWand       $ maybeToEnum [NUM_WANDS] st
@@ -58,6 +65,33 @@ inventoryItemData InventoryItem { _ii_base_type = bt, _ii_sub_type = st } = case
   other          -> error $ "unexpected item base_type " ++ show other
   where maybeToEnum unknowns s =
           let t = toEnum s in if t `elem` unknowns then Nothing else Just t
+
+parseTerseBrand :: T.Text -> Maybe WeaponBrand
+parseTerseBrand itemName =
+  (fmap snd $ find (\(brandName, _) -> ("(" <> brandName <> ")") `T.isInfixOf` itemName) terseWeaponBrandNames)
+
+terseWeaponBrandNames :: [(T.Text, WeaponBrand)]
+terseWeaponBrandNames = [
+  ("flame", SPWPN_FLAMING),
+  ("freeze", SPWPN_FREEZING),
+  ("holy", SPWPN_HOLY_WRATH),
+  ("elec", SPWPN_ELECTROCUTION),
+  ("venom", SPWPN_VENOM),
+  ("protect", SPWPN_PROTECTION),
+  ("drain", SPWPN_DRAINING),
+  ("speed", SPWPN_SPEED),
+  ("pain", SPWPN_PAIN),
+  ("distort", SPWPN_DISTORTION),
+  ("reap", SPWPN_REAPING),
+  ("vamp", SPWPN_VAMPIRISM),
+  ("chop", SPWPN_VORPAL), -- XXX axes are always chopping but add others
+  ("antimagic ", SPWPN_ANTIMAGIC),
+  ("penet", SPWPN_PENETRATION),
+  ("evade", SPWPN_EVASION),
+  ("chaos", SPWPN_CHAOS)
+  ]
+
+
 
 inventoryItem :: InventoryItem -> Item
 inventoryItem ii = Item (inventoryItemData ii) (ii ^. ii_quantity) (ii ^. ii_col.to fixMinusOne.enum) cursedStatus

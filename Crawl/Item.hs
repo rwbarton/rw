@@ -5,7 +5,7 @@ import Crawl.Bindings
 -- Could move more type-dependent fields in here
 -- (weapon/armour enchantments, wand charges, ...)
 -- Could also use custom Unknown | Known a type instead of Maybe.
-data ItemData = ItemWeapon WeaponType
+data ItemData = ItemWeapon WeaponType (Maybe Int) (Maybe WeaponBrand)
               | ItemMissile MissileType
               | ItemArmour ArmourType -- also has plus2 = sub-subtype
               | ItemWand (Maybe WandType)
@@ -27,7 +27,7 @@ data ItemData = ItemWeapon WeaponType
 
 data CurseStatus = Uncursed | Cursed
 
-data Item = Item ItemData Int Color (Maybe CurseStatus)
+data Item = Item ItemData Int Color (Maybe CurseStatus) -- XXX should add inscription
 
 
 
@@ -45,4 +45,5 @@ knownCursed (Item _ _ _ (Just Cursed)) = True
 knownCursed _ = False
 
 isVampiric :: Item -> Bool
-isVampiric _item = False         -- XXX FIXME
+isVampiric (Item (ItemWeapon _ _ (Just SPWPN_VAMPIRISM)) _ _ _) = True
+isVampiric _ = False

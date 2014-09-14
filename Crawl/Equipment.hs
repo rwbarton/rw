@@ -3,7 +3,7 @@
 module Crawl.Equipment where
 
 import Data.List (maximumBy, nub)
-import Data.Maybe (mapMaybe, listToMaybe)
+import Data.Maybe (mapMaybe, listToMaybe, fromMaybe)
 import Data.Ord (comparing)
 
 import qualified Data.Map as M
@@ -41,6 +41,10 @@ upgradeEquipment inv equip player morsel =
 isEquipmentUpgrade :: Inventory -> Item -> Bool
 isEquipmentUpgrade inv item = case equipmentSlot item of
   Just equipSlot -> itemScore item > maximum (0 : map itemScore [ i | i <- M.elems inv, equipmentSlot i == Just equipSlot ])
+                    -- there is a tricky scenario we don't handle well:
+                    -- if our current weapon is cursed and we've found one potentially better weapon,
+                    -- we'll then evaluate that weapon optimistically which means we won't pick up
+                    -- other weapons of similar nature. itemScore should really be an interval
   Nothing -> False
 
 canUnwield :: Item -> Bool
@@ -69,7 +73,7 @@ enchantEquipment inv _equip =
 
 equipmentSlot :: Item -> Maybe EquipmentSlot
 equipmentSlot item = case itemData item of
-  ItemWeapon _ -> Just EQ_WEAPON
+  ItemWeapon {} -> Just EQ_WEAPON
   ItemArmour ARM_CLOAK -> Just EQ_CLOAK
   ItemArmour ARM_CAP -> Just EQ_HELMET
   ItemArmour ARM_HELMET -> Just EQ_HELMET
@@ -92,10 +96,27 @@ equipmentSlot item = case itemData item of
   _ -> Nothing
 
 itemScore :: Item -> Int
-itemScore item = itemTypeScore (itemData item) + if isVampiric item then 100 else 0
+itemScore item = itemTypeScore (itemData item)
 
 itemTypeScore :: ItemData -> Int
-itemTypeScore (ItemWeapon w) = baseDamage w
+itemTypeScore (ItemWeapon w (fromMaybe 3 -> plus) (fromMaybe SPWPN_VAMPIRISM -> brand))
+  = brandModify brand (150 * baseDamage w + 100 * plus)
+  where brandModify SPWPN_NORMAL s = s
+        brandModify SPWPN_FLAMING s = 5 * s `div` 4
+        brandModify SPWPN_FREEZING s = 4 * s `div` 3 -- little extra bonus for Lair slowing
+        brandModify SPWPN_HOLY_WRATH s = s + 50
+        brandModify SPWPN_ELECTROCUTION s = s + 900
+        brandModify SPWPN_VENOM s = s + 400
+        brandModify SPWPN_PROTECTION s = s + 500
+        brandModify SPWPN_DRAINING s = 9 * s `div` 8 + 200
+        brandModify SPWPN_SPEED s = 7 * s `div` 4
+        brandModify SPWPN_PAIN s = s
+        brandModify SPWPN_DISTORTION _s = 1000000 -- well we don't want to unwield this so...
+        brandModify SPWPN_VAMPIRISM s = 2 * s
+        brandModify SPWPN_VORPAL s = 9 * s `div` 8
+        brandModify SPWPN_ANTIMAGIC s = s + 200
+        brandModify SPWPN_CHAOS s = s + 600      -- chaos is fun
+        brandModify unknownBrand _ = error $ "unhandled brand in itemTypeScore: " ++ show unknownBrand
 itemTypeScore (ItemArmour a) = 2 * baseAC a - baseEVP a
 itemTypeScore _ = 1
 
@@ -107,6 +128,7 @@ baseDamage WPN_WAR_AXE = 11
 baseDamage WPN_BROAD_AXE = 13
 baseDamage WPN_BATTLEAXE = 15
 baseDamage WPN_EXECUTIONERS_AXE = 18
+baseDamage _ = 0                -- in case we accidentally pick up some junk
 
 baseAC :: ArmourType -> Int
 baseAC ARM_ANIMAL_SKIN = 2
@@ -131,6 +153,8 @@ baseAC ARM_HELMET = 1
 baseAC ARM_GLOVES = 1
 baseAC ARM_BOOTS = 1
 
+baseAC _ = 0              -- in case we accidentally pick up some junk
+
 baseEVP :: ArmourType -> Int
 baseEVP ARM_ANIMAL_SKIN = 0
 baseEVP ARM_RING_MAIL = 2
@@ -153,3 +177,5 @@ baseEVP ARM_CAP = 0
 baseEVP ARM_HELMET = 0
 baseEVP ARM_GLOVES = 0
 baseEVP ARM_BOOTS = 0
+
+baseEVP _ = 0             -- in case we accidentally pick up some junk

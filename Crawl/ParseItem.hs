@@ -2,9 +2,11 @@
 
 module Crawl.ParseItem where
 
+import Control.Applicative ((<|>))
 import Data.List (find)
 import Data.Maybe (fromMaybe)
 
+import Data.Attoparsec.Text
 import qualified Data.Text as T
 
 import Crawl.Bindings
@@ -20,17 +22,56 @@ parseItem itemName = Item (fromMaybe ItemJunk (parseItemData name)) 1 color Noth
           cts -> error $ "parseItem: item name " ++ show itemName ++ " did not parse as a single colored text: " ++ show cts
 
 parseItemData :: T.Text -> Maybe ItemData
-parseItemData itemName = fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames
+parseItemData itemName =
+  parseWeapon itemName <|>
+  (fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames)
+
+parseWeapon :: T.Text -> Maybe ItemData
+parseWeapon itemName =
+  fmap (\(_, wt) -> ItemWeapon wt plus brand) $
+  find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) weaponTypeNames
+  where plus = maybeResult $ parse plusParser itemName
+        plusParser = fmap (read . T.unpack . T.dropWhile (== '+')) $
+                     (string "a " <|> string "the " <|> string "A " <|> string "The ") >>
+                     takeWhile1 (\c -> c == '+' || c == '-' || '0' <= c && c <= '9')
+        brand = (fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) weaponBrandNames)
+                 <|> -- if no brand in the name, it's normal iff we know the plus
+                 fmap (const SPWPN_NORMAL) plus
+
+weaponTypeNames :: [(T.Text, WeaponType)]
+weaponTypeNames = [
+  -- weapons we care about
+  ("hand axe", WPN_HAND_AXE),
+  ("war axe", WPN_WAR_AXE),
+  ("broad axe", WPN_BROAD_AXE),
+  ("battleaxe", WPN_BATTLEAXE),
+  ("executioner's axe", WPN_EXECUTIONERS_AXE)
+  ]
+
+-- non-terse names
+weaponBrandNames :: [(T.Text, WeaponBrand)]
+weaponBrandNames = [
+  ("of flaming", SPWPN_FLAMING),
+  ("of freezing", SPWPN_FREEZING),
+  ("of holy wrath", SPWPN_HOLY_WRATH),
+  ("of electrocution", SPWPN_ELECTROCUTION),
+  ("of venom", SPWPN_VENOM),
+  ("of protection", SPWPN_PROTECTION),
+  ("of draining", SPWPN_DRAINING),
+  ("of speed", SPWPN_SPEED),
+  ("of pain", SPWPN_PAIN),
+  ("of distortion", SPWPN_DISTORTION),
+  ("of reaping", SPWPN_REAPING),
+  ("vampiric ", SPWPN_VAMPIRISM),
+  ("of chopping", SPWPN_VORPAL), -- XXX axes are always chopping but add others
+  ("antimagic ", SPWPN_ANTIMAGIC),
+  ("of penetration", SPWPN_PENETRATION),
+  ("of evasion", SPWPN_EVASION),
+  ("of chaos", SPWPN_CHAOS)
+  ]
 
 itemTypeNames :: [(T.Text, ItemData)]
 itemTypeNames = [
-  -- weapons we care about
-  ("hand axe", ItemWeapon WPN_HAND_AXE),
-  ("war axe", ItemWeapon WPN_WAR_AXE),
-  ("broad axe", ItemWeapon WPN_BROAD_AXE),
-  ("battleaxe", ItemWeapon WPN_BATTLEAXE),
-  ("executioner's axe", ItemWeapon WPN_EXECUTIONERS_AXE),
-
   -- armours we care about
   ("ring mail", ItemArmour ARM_RING_MAIL),
   ("scale mail", ItemArmour ARM_SCALE_MAIL),

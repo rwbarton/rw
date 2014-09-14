@@ -18,6 +18,7 @@ module Crawl.Bindings where
 
 {# enum object_class_type as ItemBaseType {} deriving (Show) #}
 {# enum weapon_type as WeaponType {} deriving (Eq, Ord, Show) #}
+{# enum brand_type as WeaponBrand {} deriving (Eq, Ord, Show) #}
 {# enum missile_type as MissileType {} deriving (Eq, Ord, Show) #}
 {# enum armour_type as ArmourType {} deriving (Eq, Ord, Show) #}
 {# enum wand_type as WandType {} deriving (Eq, Ord, Show) #}
