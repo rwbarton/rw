@@ -23,7 +23,7 @@ data ItemData = ItemWeapon WeaponType
               | ItemJunk
                 -- XXX pseudo-item for anything we don't want
                 -- and don't know how to parse yet
-              deriving Eq
+              deriving (Eq, Show)
 
 data CurseStatus = Uncursed | Cursed
 
