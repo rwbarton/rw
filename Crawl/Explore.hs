@@ -27,13 +27,14 @@ pathfind goals info loc@(Coord lx ly) = fmap (tail . reverse . map unC) $ aStar 
                                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
                                            let target = Coord (x+dx) (y+dy),
                                            maybe False isPassable (H.lookup target level),
-                                           maybe True isCloudSafe (H.lookup target (_levelClouds info)) ]
+                                           inCloud || maybe True isCloudSafe (H.lookup target (_levelClouds info)) ]
         cost _ START = error "pathfind: START unreachable"
         cost _ (C target) = maybe 0 movementCost (H.lookup target level)
                             + maybe 0 (plantPenalty . _monsterType) (H.lookup target $ _levelMonsters info)
         bound START = 0
         bound (C (Coord x y)) = max (abs (x-lx)) (abs (y-ly))
         isGoal = (== C loc)
+        inCloud = not $ maybe True isCloudSafe (H.lookup loc (_levelClouds info))
         level = _levelMap info
 
 plantPenalty :: MonsterType -> Int
