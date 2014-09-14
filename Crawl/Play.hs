@@ -7,7 +7,7 @@ module Crawl.Play (
 import Control.Applicative ((<$>), pure, (<*>), liftA2, (<|>))
 import Control.Monad (forever, guard)
 import Data.List (intersect)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe, isJust)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Control.Concurrent.Chan.Split (InChan, OutChan, writeChan, readChan)
@@ -159,8 +159,11 @@ setupNetwork recvHandler sendHandler = do
             return $ Quaff slot) <$> threatened <*> player <*> inv
 
       berserk =
-        (\p ll l -> do
-            guard $ canBerserk p
+        (\p i ll l -> do
+            let teleInstead =
+                  guard (hasStatus "Exh" p && not (hasStatus "Tele" p)) >>
+                  listToMaybe [ slot | (slot, itemData -> ItemScroll (Just SCR_TELEPORTATION)) <- M.toList i ]
+            guard $ canBerserk p || isJust teleInstead
             let monstersInView = [ (monType, dist sq l)
                                  | sq <- HS.toList $ _levelLOS ll,
                                    Just (_monsterType -> monType) <- return (H.lookup sq (_levelMonsters ll)),
@@ -168,7 +171,7 @@ setupNetwork recvHandler sendHandler = do
             guard $ not . null $ monstersInView
             guard $ 2 * _hp p < _mhp p
               || sum [ meleeThreat m | (m, d) <- monstersInView, d <= 2] >= _xl p
-            return Berserk) <$> player <*> level <*> loc
+            return $ maybe Berserk Read teleInstead) <$> player <*> inv <*> level <*> loc
         where meleeThreat MONS_GNOLL = 1
               meleeThreat MONS_WORM = 1
               meleeThreat MONS_IGUANA = 2
