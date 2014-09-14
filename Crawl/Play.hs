@@ -225,6 +225,11 @@ setupNetwork recvHandler sendHandler = do
         where dxs = [-1, -1, -1, 0, 1, 1, 1, 0]
               dys = [-1, 0, 1, 1, 1, 0, -1, -1]
 
+      useGoodConsumables i =
+        listToMaybe $
+        [ Quaff slot | (slot, itemData -> ItemPotion (Just s)) <- M.toList i, s `elem` [POT_EXPERIENCE, POT_BENEFICIAL_MUTATION] ] ++
+        [ Read slot | (slot, itemData -> ItemScroll (Just SCR_ACQUIREMENT)) <- M.toList i ]
+
       beenTo = fmap (flip HS.member) $
         R.accumB HS.empty $
         (HS.insert . _place <$> player) R.<@ moves
@@ -253,6 +258,7 @@ setupNetwork recvHandler sendHandler = do
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
         enchantEquipment <$> inv <*> equip,
+        useGoodConsumables <$> inv,
         exploreWithAuto,
         identify <$> inv <*> player,
         descend <$> level <*> loc
