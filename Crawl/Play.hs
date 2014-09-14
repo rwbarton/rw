@@ -183,6 +183,9 @@ setupNetwork recvHandler sendHandler = do
               meleeThreat MONS_GOLIATH_BEETLE = 10
               meleeThreat MONS_HILL_GIANT = 10
               meleeThreat MONS_HYDRA = 16
+              meleeThreat MONS_ETTIN = 16
+              meleeThreat MONS_RUPERT = 18
+              meleeThreat MONS_SNORG = 18
               meleeThreat MONS_PLAYER_GHOST = 27
               meleeThreat _ = 0
 
