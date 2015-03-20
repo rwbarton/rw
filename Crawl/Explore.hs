@@ -74,7 +74,7 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
   _ -> Nothing
   where isBranchEntrance DNGN_ENTER_BAZAAR = True
         isBranchEntrance DNGN_ENTER_SEWER = True
-        isBranchEntrance DNGN_ENTER_OSSUARY = False -- these just curse our weapon... and kill us
+        isBranchEntrance DNGN_ENTER_OSSUARY = True
         isBranchEntrance DNGN_ENTER_BAILEY = True
         isBranchEntrance DNGN_ENTER_ICE_CAVE = True
         isBranchEntrance DNGN_ENTER_VOLCANO = True
