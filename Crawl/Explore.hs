@@ -88,11 +88,11 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance DNGN_ENTER_SLIME = not $ beenTo "Slime Pits"
 
         -- leave these places immediately
-        isBranchEntrance DNGN_RETURN_FROM_SNAKE = True
-        isBranchEntrance DNGN_RETURN_FROM_SWAMP = True
-        isBranchEntrance DNGN_RETURN_FROM_SHOALS = True
-        isBranchEntrance DNGN_RETURN_FROM_SPIDER = True
-        isBranchEntrance DNGN_RETURN_FROM_SLIME = True
+        isBranchEntrance DNGN_EXIT_SNAKE = True
+        isBranchEntrance DNGN_EXIT_SWAMP = True
+        isBranchEntrance DNGN_EXIT_SHOALS = True
+        isBranchEntrance DNGN_EXIT_SPIDER = True
+        isBranchEntrance DNGN_EXIT_SLIME = True
 
         isBranchEntrance _ = False
 
@@ -119,7 +119,7 @@ descend info loc = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_
         isDownStair _ = False
 
 stairDirection :: Feature -> Move
-stairDirection feat | DNGN_RETURN_FROM_ORC <= feat && feat <= DNGN_RETURN_FROM_SPIDER = GoUp
+stairDirection feat | DNGN_EXIT_ORC <= feat && feat <= DNGN_EXIT_SPIDER = GoUp
 stairDirection _ = GoDown
 
 moveTo :: Coord -> Coord -> Move

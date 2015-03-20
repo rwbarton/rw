@@ -10,7 +10,7 @@ module Crawl.Bindings where
 
 {# enum tile_main_type as Tile {} deriving (Eq, Show) #}
 
-{# enum COLORS as Color {} deriving (Eq, Show, Read) #}
+{# enum COLOURS as Color {} deriving (Eq, Show, Read) #}
 
 -- Gameplay enums
 
