@@ -93,7 +93,7 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   _        -> error "tried to make illegal attack"
 moveProgram Berserk = useAbility "a"
 moveProgram TrogsHand = useAbility "b"
-moveProgram BurnBooks = useAbility "f"
+moveProgram BurnBooks = useAbility "d"
 moveProgram GoUp = press "<"
 moveProgram GoDown = press ">"
 moveProgram Rest = press "."
