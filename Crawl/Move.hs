@@ -57,8 +57,8 @@ type Send = Program SendOp
 press :: T.Text -> Send ()
 press = singleton . Press
 
-expectPrompt :: T.Text -> Send ()
-expectPrompt = singleton . ExpectPrompt
+_expectPrompt :: T.Text -> Send ()
+_expectPrompt = singleton . ExpectPrompt
 
 expectMenu :: (T.Text -> Bool) -> Send ()
 expectMenu = singleton . ExpectMenu
@@ -148,7 +148,7 @@ moveProgram Dump = press "#"
 useAbility :: T.Text -> Send ()
 useAbility a = do
   press "a"
-  expectPrompt "<cyan>Use which ability? (? or * to list) <lightgrey>"
+  expectMenu (T.isPrefixOf "<white>  Ability - do what?")
   press a
 
 
