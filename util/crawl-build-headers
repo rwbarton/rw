@@ -6,6 +6,6 @@ if ! type dwarf2enum >/dev/null; then
     exit 1
 fi
 pushd crawl-debug/crawl-ref/source >/dev/null
-make -j${THREADS:-1} WEBTILES=y CFLAGS=-gdwarf-3 V=1 debug
+make -j${THREADS:-1} WEBTILES=y EXTERNAL_FLAGS=-gdwarf-3 V=1 debug
 popd >/dev/null
 make include/enums.h
