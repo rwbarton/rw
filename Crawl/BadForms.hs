@@ -12,6 +12,8 @@ import Crawl.Status
 data Form = Normal | Tree | Fungus
 
 filterLegalInForm :: Player -> Maybe Move -> Maybe Move
+filterLegalInForm p (Just (Attack dx dy))
+  | isConfused p = filterLegalInForm p (Just (Go dx dy))
 filterLegalInForm p (Just m)
   | legalInForm p m = Just m
 filterLegalInForm _ _ = Nothing
