@@ -123,10 +123,10 @@ setupNetwork recvHandler sendHandler = do
             guard $ any wi . knownItems $ is
             return (PickUp wi)) <$> loc <*> floorItems <*> (fmap (wantItem False) inv)
 
-      corpses = fmap (HS.fromList . H.keys . H.filter (any sacrificable . knownItems . snd)) floorItems
-      useCorpse = (\l c p ->
+      corpses = fmap (HS.fromList . H.keys . H.filter (any butcherable . knownItems . snd)) floorItems
+      useCorpse = (\l c ->
                     guard (HS.member l c) >>
-                    return (if hungerLevel p < HS_SATIATED then Butcher else Pray)) <$> loc <*> corpses <*> player
+                    return Butcher) <$> loc <*> corpses
       -- 'loot' is responsible for getting us to the corpse
 
       burnBooks =

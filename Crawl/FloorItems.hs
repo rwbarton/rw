@@ -4,7 +4,7 @@ module Crawl.FloorItems (
   SquareItems(..), knownItems, possiblyAny,
   FloorItems, trackFloorItems, scanFloorItems,
   wantItem, wantItemPickup,
-  sacrificable, isBook
+  butcherable, isBook
   ) where
 
 import Control.Applicative ((<$>), (<*>), liftA2)
@@ -143,7 +143,7 @@ thingsThatAreHereMessages messages commandMode =
 
 wantItem :: Bool -> Inventory -> Item -> Bool
 wantItem corpsesOnly inv item
-  = not corpsesOnly && wantItemPickup inv item || sacrificable item
+  = not corpsesOnly && wantItemPickup inv item || butcherable item
 
 wantItemPickup :: Inventory -> Item -> Bool
 wantItemPickup inv item = case itemData item of
@@ -153,9 +153,9 @@ wantItemPickup inv item = case itemData item of
   ItemScroll _ -> True
   _ -> isEquipmentUpgrade inv item
 
-sacrificable :: Item -> Bool
-sacrificable (itemData -> ItemCorpse _ False) = True
-sacrificable _ = False
+butcherable :: Item -> Bool
+butcherable (itemData -> ItemCorpse _ False) = True
+butcherable _ = False
 
 isBook :: Item -> Bool
 isBook (itemData -> ItemBook {}) = True
