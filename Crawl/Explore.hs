@@ -52,6 +52,7 @@ kill info loc _player = case pathfind (HS.fromList $ H.keys $ H.filter isRealMon
           MONS_FUNGUS -> False
           MONS_PLANT -> False
           MONS_BUSH -> False
+          MONS_BUTTERFLY -> False
           _ -> True
 
 explore :: LevelInfo -> Coord -> Maybe Move
