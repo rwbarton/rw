@@ -184,6 +184,7 @@ setupNetwork recvHandler sendHandler = do
               meleeThreat MONS_OGRE = 6
               meleeThreat MONS_ORC_WARRIOR = 6
               meleeThreat MONS_SKELETAL_WARRIOR = 7
+              meleeThreat MONS_PURGY = 8
               meleeThreat MONS_SIGMUND = 8
               meleeThreat MONS_HILL_GIANT = 10
               meleeThreat MONS_ORC_KNIGHT = 12
