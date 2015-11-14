@@ -134,6 +134,12 @@ thingsThatAreHereMessages messages commandMode =
         handleMessage Message { _msgChannel = MSGCH_PLAIN, _msgText = item } acc = (\x -> (x, x)) (fmap (++ [item]) acc)
         -- ugh. we have to do it this way because the floorItems must be updated *before* the input_mode = 0 event arrives,
         -- or we will choose a move based on the old value.
+
+        -- In 0.17 we started getting these here frequently, not sure why,
+        -- but it seems safe to ignore them
+        handleMessage Message { _msgChannel = MSGCH_DURATION } _ = (Nothing, Nothing)
+        handleMessage Message { _msgChannel = MSGCH_ROTTEN_MEAT } _ = (Nothing, Nothing)
+        handleMessage Message { _msgChannel = MSGCH_MONSTER_WARNING } _ = (Nothing, Nothing)
         handleMessage _ Nothing = (Nothing, Nothing)
         handleMessage _ (Just _) = error "unexpected message in thingsThatAreHereMessages"
         handleCommandMode _ _ = (Nothing, Nothing)
