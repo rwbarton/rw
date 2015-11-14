@@ -239,7 +239,7 @@ setupNetwork recvHandler sendHandler = do
 
       beenTo = fmap (flip HS.member) $
         R.accumB HS.empty $
-        (HS.insert . _place <$> player) R.<@ moves
+        (HS.insert . dlvl <$> player) R.<@ moves
 
       lastDump = R.stepper 0 $ (_time <$> player) R.<@ R.filterE (\mv -> case mv of { Dump -> True; _ -> False }) moves
       dump = (\l t -> guard (t `div` 10000 > l `div` 10000) >> Just Dump) <$> lastDump <*> (_time <$> player)
@@ -268,7 +268,7 @@ setupNetwork recvHandler sendHandler = do
         useGoodConsumables <$> inv,
         exploreWithAuto,
         identify <$> inv <*> player,
-        descend <$> level <*> loc
+        descend <$> level <*> loc <*> (dlvl <$> player) <*> beenTo
         ]
       (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
                         (filterBy (\msg -> guard (msg ^? key "msg" == Just "menu") >> return (parseMenu msg)) demultiplexed)

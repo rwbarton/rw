@@ -14,6 +14,8 @@ module Crawl.Bindings where
 
 -- Gameplay enums
 
+{# enum branch_type as Branch {} deriving (Eq, Ord) #}
+
 {# enum dungeon_feature_type as Feature {} deriving (Eq, Ord) #}
 
 {# enum object_class_type as ItemBaseType {} deriving (Show) #}

@@ -17,6 +17,7 @@ import qualified Reactive.Banana as R
 import qualified Data.Text as T
 
 import Crawl.Bindings (HungerLevel(..))
+import Crawl.Branch (DungeonLevel(..), parseBranch)
 
 data Player = Player {
   _species :: !T.Text,
@@ -122,3 +123,6 @@ canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) &&
 canTrogsHand :: Player -> Bool
 canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2
                  && hungerLevel p >= HS_NEAR_STARVING
+
+dlvl :: Player -> DungeonLevel
+dlvl p = DungeonLevel (parseBranch (_place p)) (_depth p)
