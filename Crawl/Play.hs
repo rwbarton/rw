@@ -224,6 +224,9 @@ setupNetwork recvHandler sendHandler = do
               (Attack _ _, _) -> Just AutoFight
               _ -> Just m) <$> level <*> loc <*> player <*> lastMove <*> (_time <$> player)
 
+      killWithTabIfThreatened =
+        (\t k -> if t then k else Nothing) <$> threatened <*> killWithTab
+
       invisibleMonsters =
         R.stepper False $
         (const True <$> R.filterE ((== "<lightred>Deactivating autopickup; reactivate with <white>Ctrl-A<lightred>.<lightgrey>") . _msgText) messages)
@@ -253,12 +256,13 @@ setupNetwork recvHandler sendHandler = do
         healWounds,
         trogsHand,
         killInvisible,
-        killWithTab,
+        killWithTabIfThreatened,
         eat,
         useCorpse,
         burnBooks,
         pickup,
         rest,
+        killWithTab,
         enterBranches <$> level <*> loc <*> beenTo,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
