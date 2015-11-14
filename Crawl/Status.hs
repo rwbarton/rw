@@ -125,4 +125,7 @@ canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" 
                  && hungerLevel p >= HS_NEAR_STARVING
 
 dlvl :: Player -> DungeonLevel
-dlvl p = DungeonLevel (parseBranch (_place p)) (_depth p)
+dlvl p = DungeonLevel (parseBranch (_place p)) (fixDepth $ _depth p)
+  where fixDepth 0 = 1 -- places in single-level branches are reported as
+                       -- e.g. Temple 0
+        fixDepth d = d
