@@ -47,9 +47,6 @@ isEquipmentUpgrade inv item = case equipmentSlot item of
                     -- other weapons of similar nature. itemScore should really be an interval
   Nothing -> False
 
-canUnwield :: Item -> Bool
-canUnwield item = not (knownCursed item) && not (isVampiric item)
-
 -- This gets called after upgradeEquipment,
 -- so anything that goes in a slot we have filled must be junk
 -- (unless it's vampiric and we can't eat enough yet)
@@ -111,7 +108,7 @@ itemTypeScore (ItemWeapon w (fromMaybe 3 -> plus) (fromMaybe SPWPN_VAMPIRISM -> 
         brandModify SPWPN_DRAINING s = 9 * s `div` 8 + 200
         brandModify SPWPN_SPEED s = 7 * s `div` 4
         brandModify SPWPN_PAIN s = s
-        brandModify SPWPN_DISTORTION _s = 1000000 -- well we don't want to unwield this so...
+        brandModify SPWPN_DISTORTION s = 3 * s `div` 2
         brandModify SPWPN_VAMPIRISM s = 2 * s
         brandModify SPWPN_VORPAL s = 9 * s `div` 8
         brandModify SPWPN_ANTIMAGIC s = s + 200
