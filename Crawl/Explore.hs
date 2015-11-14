@@ -59,8 +59,8 @@ explore info loc = case pathfind (_levelFringe info) info loc of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
 
-loot :: Bool -> LevelInfo -> Coord -> FloorItems -> Inventory -> Maybe Move
-loot corpsesOnly info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny (wantItem corpsesOnly inv) . snd) items) info loc of
+loot :: LevelInfo -> Coord -> FloorItems -> Inventory -> Maybe Move
+loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny (wantItem False inv) . snd) items) info loc of
   Just [] -> Just LookHere
   Just locs@(loc' : _)
     | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')

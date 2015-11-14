@@ -258,10 +258,9 @@ setupNetwork recvHandler sendHandler = do
         useCorpse,
         burnBooks,
         pickup,
-        loot True <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         rest,
         enterBranches <$> level <*> loc <*> beenTo,
-        loot False <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
+        loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
         enchantEquipment <$> inv <*> equip,
