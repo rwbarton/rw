@@ -97,6 +97,9 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance DNGN_EXIT_SHOALS = True
         isBranchEntrance DNGN_EXIT_SPIDER = True
         isBranchEntrance DNGN_EXIT_SLIME = True
+        isBranchEntrance DNGN_EXIT_ICE_CAVE = True
+        isBranchEntrance DNGN_EXIT_VOLCANO = True
+        isBranchEntrance DNGN_EXIT_WIZLAB = True
 
         isBranchEntrance _ = False
 
