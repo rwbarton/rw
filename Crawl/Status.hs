@@ -109,9 +109,11 @@ isSilenced = hasStatus "Sil"
 
 hungerLevel :: Player -> HungerLevel
 hungerLevel p = fromMaybe HS_SATIATED $
-                fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [HS_STARVING ..]))
-  where hungerStatuses = ["Starving", "Near Starving", "Very Hungry", "Hungry",
-                          "Satiated" {- not really used -}, "Full", "Very Full", "Engorged"]
+                fmap snd (find (flip hasStatus p . fst) (zip hungerStatuses [HS_FAINTING ..]))
+  where hungerStatuses = ["Fainting", "Starving", "Near Starving",
+                          "Very Hungry", "Hungry",
+                          "Satiated" {- not really used -}, "Full",
+                          "Very Full", "Engorged"]
 
 canBerserk :: Player -> Bool
 canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p)
