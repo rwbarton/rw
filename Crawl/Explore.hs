@@ -20,14 +20,15 @@ import Crawl.Status
 
 data V = START | C { unC :: !Coord } deriving (Eq, Ord)
 
-pathfind :: HS.HashSet Coord -> LevelInfo -> Coord -> Maybe [Coord]
-pathfind goals info loc@(Coord lx ly) = fmap (tail . reverse . map unC) $ aStar adj cost bound isGoal START
+pathfind :: HS.HashSet Coord -> LevelInfo -> Coord -> Bool -> Maybe [Coord]
+pathfind goals info loc@(Coord lx ly) desperate = fmap (tail . reverse . map unC) $ aStar adj cost bound isGoal START
   where adj START = S.fromList $ map C $ HS.toList goals
         adj (C (Coord x y)) = S.fromList [ C target
                                          | dx <- [-1,0,1], dy <- [-1,0,1], not (dx == 0 && dy == 0),
                                            let target = Coord (x+dx) (y+dy),
                                            maybe False isPassable (H.lookup target level),
-                                           inCloud || maybe True isCloudSafe (H.lookup target (_levelClouds info)) ]
+                                           inCloud || maybe True isCloudSafe (H.lookup target (_levelClouds info)),
+                                           desperate || maybe 0 movementCost (H.lookup target level) < 10000 ]
         cost _ START = error "pathfind: START unreachable"
         cost _ (C target) = maybe 0 movementCost (H.lookup target level)
                             + maybe 0 (plantPenalty . _monsterType) (H.lookup target $ _levelMonsters info)
@@ -44,7 +45,7 @@ plantPenalty MONS_BUSH = 80
 plantPenalty _ = 0
 
 kill :: LevelInfo -> Coord -> Player -> Maybe Move
-kill info loc _player = case pathfind (HS.fromList $ H.keys $ H.filter isFoe (_levelMonsters info)) info loc of
+kill info loc _player = case pathfind (HS.fromList $ H.keys $ H.filter isFoe (_levelMonsters info)) info loc False of
   Just [loc'] -> Just (attackTo loc loc')
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
@@ -57,12 +58,12 @@ kill info loc _player = case pathfind (HS.fromList $ H.keys $ H.filter isFoe (_l
           _ -> True
 
 explore :: LevelInfo -> Coord -> Maybe Move
-explore info loc = case pathfind (_levelFringe info) info loc of
+explore info loc = case pathfind (_levelFringe info) info loc False of
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
 
 loot :: LevelInfo -> Coord -> FloorItems -> Inventory -> Maybe Move
-loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny (wantItem False inv) . snd) items) info loc of
+loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possiblyAny (wantItem False inv) . snd) items) info loc False of
   Just [] -> Just LookHere
   Just locs@(loc' : _)
     | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')
@@ -70,7 +71,7 @@ loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possib
   where isTeleTrap = (== DNGN_TRAP_TELEPORT)
 
 enterBranches :: LevelInfo -> Coord -> (DungeonLevel -> Bool) -> Maybe Move
-enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isBranchEntrance (_levelMap info)) info loc of
+enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isBranchEntrance (_levelMap info)) info loc True of
   Just [] -> Just (stairDirection (_levelMap info H.! loc))
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
@@ -102,13 +103,16 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance DNGN_EXIT_ICE_CAVE = True
         isBranchEntrance DNGN_EXIT_VOLCANO = True
         isBranchEntrance DNGN_EXIT_WIZLAB = True
+        isBranchEntrance DNGN_EXIT_LABYRINTH = True
+
+        isBranchEntrance DNGN_EXIT_ABYSS = True
 
         isBranchEntrance _ = False
 
         beenToBranch br = beenTo (DungeonLevel br 1)
 
 descend :: LevelInfo -> Coord -> DungeonLevel -> (DungeonLevel -> Bool) -> Maybe Move
-descend info loc dl beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_levelMap info)) info loc of
+descend info loc dl beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_levelMap info)) info loc True of
   Just [] -> Just (stairDirection (_levelMap info H.! loc))
   Just (loc' : _) -> Just (moveTo loc loc')
   _ -> Nothing
