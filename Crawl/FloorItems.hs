@@ -138,7 +138,10 @@ thingsThatAreHereMessages messages commandMode =
         -- In 0.17 we started getting these here frequently, not sure why,
         -- but it seems safe to ignore them
         handleMessage Message { _msgChannel = MSGCH_DURATION } _ = (Nothing, Nothing)
+        handleMessage Message { _msgChannel = MSGCH_FOOD } _ = (Nothing, Nothing)
+        handleMessage Message { _msgChannel = MSGCH_SOUND } _ = (Nothing, Nothing)
         handleMessage Message { _msgChannel = MSGCH_ROTTEN_MEAT } _ = (Nothing, Nothing)
+        handleMessage Message { _msgChannel = MSGCH_TIMED_PORTAL } _ = (Nothing, Nothing)
         handleMessage Message { _msgChannel = MSGCH_MONSTER_WARNING } _ = (Nothing, Nothing)
         handleMessage _ Nothing = (Nothing, Nothing)
         handleMessage _ (Just _) = error "unexpected message in thingsThatAreHereMessages"
