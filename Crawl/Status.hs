@@ -40,7 +40,7 @@ makeLenses ''Player
 initialStatus :: Player
 initialStatus = Player
                 "Yak"
-                "Lugafu"
+                ""
                 0
                 0 0 0
                 0 0
