@@ -277,6 +277,7 @@ setupNetwork recvHandler sendHandler = do
         berserk,
         healWounds,
         trogsHand,
+        enterBranches <$> level <*> loc <*> beenTo,
         killInvisible,
         killWithTabIfThreatened,
         eat,
@@ -285,7 +286,6 @@ setupNetwork recvHandler sendHandler = do
         pickup,
         rest,
         killWithTab,
-        enterBranches <$> level <*> loc <*> beenTo,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
