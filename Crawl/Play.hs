@@ -134,7 +134,7 @@ setupNetwork recvHandler sendHandler = do
       burnBooks =
         (\fi l p -> do
             guard (any isBook $ concatMap (knownItems . snd . snd) . filter ((/= l) . fst) $ H.toList fi)
-            guard $ not (isConfused p) && not (isBerserk p) && not (isSilenced p)
+            guard $ not (isConfused p) && not (isBerserk p) && not (isSilenced p) && _god p == "Trog"
             return BurnBooks) <$> floorItems <*> loc <*> player
 
       threatened =

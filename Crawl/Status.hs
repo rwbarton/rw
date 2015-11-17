@@ -117,15 +117,15 @@ hungerLevel p = fromMaybe HS_SATIATED $
                           "Very Full", "Engorged"]
 
 canBerserk :: Player -> Bool
-canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p)
+canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p) && _pietyStars p >= 1 && _god p == "Trog"
                && hungerLevel p >= HS_HUNGRY
 
 canTrogsHand :: Player -> Bool
-canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2
+canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2 && _god p == "Trog"
                  && hungerLevel p >= HS_NEAR_STARVING
 
 canBiA :: Player -> Bool
-canBiA p = not (isBerserk p) && not (isConfused p) && _pietyStars p >= 4
+canBiA p = not (isBerserk p) && not (isConfused p) && _pietyStars p >= 4 && _god p == "Trog"
            && hungerLevel p >= HS_NEAR_STARVING
 
 dlvl :: Player -> DungeonLevel
