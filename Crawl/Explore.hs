@@ -54,6 +54,7 @@ kill info loc _player = case pathfind (HS.fromList $ H.keys $ H.filter isFoe (_l
           MONS_FUNGUS -> False
           MONS_PLANT -> False
           MONS_BUSH -> False
+          MONS_OKLOB_PLANT -> False -- Try to avoid fighting these
           MONS_BUTTERFLY -> False
           _ -> True
 
