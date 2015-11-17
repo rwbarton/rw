@@ -123,8 +123,8 @@ baseDamage :: WeaponType -> Int
 baseDamage WPN_HAND_AXE = 7
 baseDamage WPN_WAR_AXE = 11
 baseDamage WPN_BROAD_AXE = 13
-baseDamage WPN_BATTLEAXE = 15
-baseDamage WPN_EXECUTIONERS_AXE = 18
+-- baseDamage WPN_BATTLEAXE = 15
+-- baseDamage WPN_EXECUTIONERS_AXE = 18
 baseDamage _ = 0                -- in case we accidentally pick up some junk
 
 baseAC :: ArmourType -> Int
