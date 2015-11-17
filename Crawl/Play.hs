@@ -213,6 +213,16 @@ setupNetwork recvHandler sendHandler = do
                  MONS_JORGRUN, MONS_DRACONIAN_SHIFTER, MONS_CACODEMON, MONS_PANDEMONIUM_LORD, MONS_ERESHKIGAL] ++
                 [MONS_SIGMUND, MONS_GRINDER]
 
+      bia =
+        (\p l -> do
+            guard (canBiA p)
+            let monstersInView = [ _monsterType mon | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)) ]
+            let alliesInView = [ _monsterType mon | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)), _monsterAttitude mon == ATT_FRIENDLY ]
+            guard $ null alliesInView
+            guard $ not (null $ monstersInView `intersect` biaMonsters)
+            return BiA) <$> player <*> level
+        where biaMonsters = [MONS_HYDRA, MONS_OKLOB_PLANT, MONS_SONJA]
+
       moveFailures = filterBy (\(t, (t', lm), im) -> guard (im == MOUSE_MODE_COMMAND && t == t') >> return (lm,t)) $
                      (,,) <$> (_time <$> player) <*> lastMove R.<@> inputModeEvents
 
@@ -260,6 +270,7 @@ setupNetwork recvHandler sendHandler = do
         scanFloorItems <$> level <*> loc <*> floorItems,
         eatWhenStarving,
         cureConfusion,
+        bia,
         berserk,
         healWounds,
         trogsHand,

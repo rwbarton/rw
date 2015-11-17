@@ -124,6 +124,10 @@ canTrogsHand :: Player -> Bool
 canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2
                  && hungerLevel p >= HS_NEAR_STARVING
 
+canBiA :: Player -> Bool
+canBiA p = not (isBerserk p) && not (isConfused p) && _pietyStars p >= 4
+           && hungerLevel p >= HS_NEAR_STARVING
+
 dlvl :: Player -> DungeonLevel
 dlvl p = DungeonLevel (parseBranch (_place p)) (fixDepth $ _depth p)
   where fixDepth 0 = 1 -- places in single-level branches are reported as
