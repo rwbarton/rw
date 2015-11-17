@@ -30,13 +30,16 @@ instance H.Hashable Coord where
 
 -- Want these to be strict, but how to catch uninitialized fields then?
 data Monster = Monster {
-  _monsterType :: MonsterType
+  _monsterType :: MonsterType,
+  _monsterAttitude :: MonsterAttitude
   }
 
 makeLenses ''Monster
 
 uninitializedMonster :: Monster
-uninitializedMonster = Monster (error "used uninitializedMonster monsterType!")
+uninitializedMonster = Monster
+                       (error "used uninitializedMonster monsterType!")
+                       (error "used uninitializedMonster monsterAttitude!")
 
 data LevelInfo = LevelInfo {
   _levelMap :: !(H.HashMap Coord MapCell),
@@ -106,6 +109,7 @@ levelInfo input = R.accumB emptyLevel $ fmap (execState . updateLevel) input
                                             (use (levelMonsters.at coord))
                               let newMonster = (`execState` oldMonster) $ do
                                     F.mapM_ (monsterType .=) (monsterData ^? key "type"._Integer.integral.enum)
+                                    F.mapM_ (monsterAttitude .=) (monsterData ^? key "att"._Integer.integral.enum)
                               levelMonsters.at coord .= Just newMonster
                               F.forM_ monsterID $ \mid -> levelMonsterTable.at mid .= Just newMonster
 
