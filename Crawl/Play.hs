@@ -247,8 +247,11 @@ setupNetwork recvHandler sendHandler = do
       invisibleMonsters =
         R.stepper False $
         (const True <$> R.filterE ((== "<lightred>Deactivating autopickup; reactivate with <white>Ctrl-A<lightred>.<lightgrey>") . _msgText) messages)
-        `R.union` (const False <$> R.filterE ((== "<lightred>Reactivating autopickup.<lightgrey>") . _msgText) messages)
-      killInvisible = (\ims u -> guard ims >> Just (Attack (dxs !! u) (dys !! u))) <$> invisibleMonsters <*> R.stepper 0 (randomize (0, 7) demultiplexed)
+        `R.union` (const False <$> R.filterE (isReactivatingAutopickup . _msgText) messages)
+        where isReactivatingAutopickup "<lightred>Reactivating autopickup.<lightgrey>" = True
+              isReactivatingAutopickup "<lightgrey>Autopickup is now on.<lightgrey>" = True
+              isReactivatingAutopickup _ = False
+      killInvisible = (\ims u rnd -> guard ims >> if rnd /= (0 :: Int) then Just (Attack (dxs !! u) (dys !! u)) else Just AutoPickup) <$> invisibleMonsters <*> R.stepper 0 (randomize (0, 7) demultiplexed) <*> R.stepper 0 (randomize (0, 26) demultiplexed)
         where dxs = [-1, -1, -1, 0, 1, 1, 1, 0]
               dys = [-1, 0, 1, 1, 1, 0, -1, -1]
 
