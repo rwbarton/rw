@@ -163,7 +163,7 @@ setupNetwork recvHandler sendHandler = do
       berserk =
         (\p i ll l -> do
             let teleInstead =
-                  guard (hasStatus "Exh" p && not (hasStatus "Tele" p)) >>
+                  guard (hasStatus "Exh" p && not (hasStatus "Tele" p) && not (isConfused p)) >>
                   listToMaybe [ slot | (slot, itemData -> ItemScroll (Just SCR_TELEPORTATION)) <- M.toList i ]
             guard $ canBerserk p || isJust teleInstead
             let monstersInView = [ (monType, dist sq l)
