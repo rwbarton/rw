@@ -30,13 +30,23 @@ parseWeapon :: T.Text -> Maybe ItemData
 parseWeapon itemName =
   fmap (\(_, wt) -> ItemWeapon wt plus brand) $
   find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) weaponTypeNames
-  where plus = maybeResult $ parse plusParser itemName
+  where plus = maybeResult (parse plusParser itemName) <|> guessPlus
         plusParser = fmap (read . T.unpack . T.dropWhile (== '+')) $
                      (string "a " <|> string "the " <|> string "A " <|> string "The ") >>
                      takeWhile1 (\c -> c == '+' || c == '-' || '0' <= c && c <= '9')
         brand = (fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) weaponBrandNames)
                  <|> -- if no brand in the name, it's normal iff we know the plus
                  fmap (const SPWPN_NORMAL) plus
+                 <|> -- if we also don't know the plus, judge from ego adjectives
+                 guessEgo
+
+        guessPlus
+          | " enchanted " `T.isInfixOf` itemName = Nothing
+          | otherwise = Just 0
+        guessEgo
+          | any (\adj -> (" " `T.append` adj `T.append` " ") `T.isInfixOf` itemName) egoAdjectives = Nothing
+          | otherwise = Just SPWPN_NORMAL
+
 
 weaponTypeNames :: [(T.Text, WeaponType)]
 weaponTypeNames = [
@@ -68,6 +78,15 @@ weaponBrandNames = [
   ("of penetration", SPWPN_PENETRATION),
   ("of evasion", SPWPN_EVASION),
   ("of chaos", SPWPN_CHAOS)
+  ]
+
+egoAdjectives :: [T.Text]
+egoAdjectives = [
+  "glowing",
+  "runed",
+  "shiny",
+  "dyed",
+  "embroidered"
   ]
 
 itemTypeNames :: [(T.Text, ItemData)]
