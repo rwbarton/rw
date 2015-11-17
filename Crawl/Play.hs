@@ -114,6 +114,8 @@ setupNetwork recvHandler sendHandler = do
       -- Always eat a chunk if possible; permafood only if very hungry
       eat = (\p ec ep -> ec <|> (guard (hungerLevel p < HS_HUNGRY) >> ep))
             <$> player <*> eatChunk <*> eatPermafood
+      eatWhenStarving = (\p ea -> guard (hungerLevel p <= HS_STARVING) >> ea)
+                        <$> player <*> eatAnything
 
       floorItems = trackFloorItems cursor level inputModeB messages lastMove loc moves inputModeChanged
 
@@ -254,6 +256,7 @@ setupNetwork recvHandler sendHandler = do
       move = foldr (liftA2 (flip fromMaybe)) (pure Rest) $ map (fmap filterLegalInForm player <*>) [
         dump,
         scanFloorItems <$> level <*> loc <*> floorItems,
+        eatWhenStarving,
         cureConfusion,
         berserk,
         healWounds,
