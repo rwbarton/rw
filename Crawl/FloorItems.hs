@@ -160,6 +160,7 @@ wantItemPickup inv item = case itemData item of
   ItemFood _ -> True
   ItemPotion _ -> True
   ItemScroll _ -> True
+  ItemMiscellany (Just MISC_RUNE_OF_ZOT) -> True
   _ -> isEquipmentUpgrade inv item
 
 butcherable :: Item -> Bool

@@ -119,5 +119,7 @@ itemTypeNames = [
   ("book", ItemBook Nothing),   -- XXX technically ItemBook includes manuals also
 
   -- others
+  ("rune of Zot", ItemMiscellany (Just MISC_RUNE_OF_ZOT)),
+
   ("gold piece", ItemGold)
   ]
