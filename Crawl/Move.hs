@@ -213,6 +213,7 @@ sendMoves move messages inputModeChanged menu
           AnswerYesNo item :>>= prog'@(view . ($ ()) -> SetPickupFunc f :>>= _) -> ([Right (if f (parseItem item) then "y" else "n")], prog' ())
           _ -> ([Right "Y"], prog)
         handleInputMode _ _ prog = ([], prog)
+
         handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())
         handleMenu (_menuTag -> "shop") prog = ([], press "\ESC" >> prog)
         handleMenu (_menuTag -> "skills") prog = ([Right "\r"], prog)
