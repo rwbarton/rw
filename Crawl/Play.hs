@@ -119,6 +119,12 @@ setupNetwork recvHandler sendHandler = do
 
       floorItems = trackFloorItems cursor level inputModeB messages lastMove loc moves inputModeChanged
 
+      pickupRune =
+        (\l i -> do
+            (_, is) <- H.lookup l i
+            guard $ any isRune . knownItems $ is
+            return (PickUp isRune)) <$> loc <*> floorItems
+
       pickup =
         (\l i wi -> do
             (_, is) <- H.lookup l i
@@ -273,6 +279,7 @@ setupNetwork recvHandler sendHandler = do
         scanFloorItems <$> level <*> loc <*> floorItems,
         eatWhenStarving,
         cureConfusion,
+        pickupRune,
         bia,
         berserk,
         healWounds,

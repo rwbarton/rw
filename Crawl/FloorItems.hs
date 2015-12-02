@@ -4,7 +4,7 @@ module Crawl.FloorItems (
   SquareItems(..), knownItems, possiblyAny,
   FloorItems, trackFloorItems, scanFloorItems,
   wantItem, wantItemPickup,
-  butcherable, isBook
+  butcherable, isBook, isRune
   ) where
 
 import Control.Applicative ((<$>), (<*>), liftA2)
@@ -187,3 +187,7 @@ butcherable _ = False
 isBook :: Item -> Bool
 isBook (itemData -> ItemBook {}) = True
 isBook _ = False
+
+isRune :: Item -> Bool
+isRune (itemData -> ItemMiscellany (Just MISC_RUNE_OF_ZOT)) = True
+isRune _ = False
