@@ -9,7 +9,7 @@ import qualified Data.HashMap.Strict as H
 import Crawl.Move
 import Crawl.Status
 
-data Form = Normal | Tree | Fungus | Spider | Pig
+data Form = Normal | Tree | Fungus | Spider | Pig | Wisp
 
 filterLegalInForm :: Player -> Maybe Move -> Maybe Move
 filterLegalInForm p (Just (Attack dx dy))
@@ -27,6 +27,9 @@ legalInForm p m = case (form, m) of
   (Pig, Wield _) -> False
   (Pig, Wear _) -> False
   (Pig, TakeOff _) -> False
+  (Wisp, Wield _) -> False
+  (Wisp, Wear _) -> False
+  (Wisp, TakeOff _) -> False
   (Tree, Attack _ _) -> True
   (Tree, Rest) -> True
   (Tree, LongRest) -> True
@@ -37,4 +40,4 @@ legalInForm p m = case (form, m) of
   (Fungus, TakeOff _) -> False
   (_, _) -> True
   where form = maybe Normal snd $ find (\(light, _) -> light `H.member` _statuses p) badforms
-        badforms = [("Tree", Tree), ("Fungus", Fungus), ("Spider", Spider), ("Pig", Pig)]
+        badforms = [("Tree", Tree), ("Fungus", Fungus), ("Spider", Spider), ("Pig", Pig), ("Wisp", Wisp)]
