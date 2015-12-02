@@ -158,8 +158,25 @@ wantItemPickup :: Inventory -> Item -> Bool
 wantItemPickup inv item = case itemData item of
   ItemGold -> False
   ItemFood _ -> True
-  ItemPotion _ -> True
-  ItemScroll _ -> True
+
+  ItemPotion Nothing -> True
+  ItemPotion (Just POT_CURING) -> True
+  ItemPotion (Just POT_HEAL_WOUNDS) -> True
+  ItemPotion (Just POT_HASTE) -> True
+  ItemPotion (Just POT_MIGHT) -> True
+  ItemPotion (Just POT_AGILITY) -> True
+  ItemPotion (Just POT_RESISTANCE) -> True
+  ItemPotion (Just POT_EXPERIENCE) -> True
+  ItemPotion (Just POT_BENEFICIAL_MUTATION) -> True
+
+  ItemScroll Nothing -> True
+  ItemScroll (Just SCR_REMOVE_CURSE) -> True
+  ItemScroll (Just SCR_ENCHANT_WEAPON) -> True
+  ItemScroll (Just SCR_ENCHANT_ARMOUR) -> True
+  ItemScroll (Just SCR_TELEPORTATION) -> True
+  ItemScroll (Just SCR_MAGIC_MAPPING) -> True
+  ItemScroll (Just SCR_ACQUIREMENT) -> True
+
   ItemMiscellany (Just MISC_RUNE_OF_ZOT) -> True
   _ -> isEquipmentUpgrade inv item
 

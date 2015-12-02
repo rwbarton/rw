@@ -23,7 +23,7 @@ parseItem itemName = Item (fromMaybe ItemJunk (parseItemData name)) 1 color Noth
 
 parseItemData :: T.Text -> Maybe ItemData
 parseItemData itemName =
-  parseWeapon itemName <|>
+  parseWeapon itemName <|> parseScroll itemName <|> parsePotion itemName <|>
   (fmap snd $ find ((`T.isInfixOf` itemName) . (" " `T.append`) . fst) itemTypeNames)
 
 parseWeapon :: T.Text -> Maybe ItemData
@@ -41,12 +41,31 @@ parseWeapon itemName =
                  guessEgo
 
         guessPlus
-          | " enchanted " `T.isInfixOf` itemName = Nothing
+          | " enchanted " `T.isInfixOf` itemName || guessEgo == Nothing = Nothing
           | otherwise = Just 0
         guessEgo
           | any (\adj -> (" " `T.append` adj `T.append` " ") `T.isInfixOf` itemName) egoAdjectives = Nothing
           | otherwise = Just SPWPN_NORMAL
 
+parseScroll :: T.Text -> Maybe ItemData
+parseScroll itemName
+  | " scroll" `T.isInfixOf` itemName =
+    if " labeled " `T.isInfixOf` itemName
+    then Just (ItemScroll Nothing)
+    else case [ scrollType | (scrollName, scrollType) <- scrollNames, scrollName `T.isInfixOf` itemName ] of
+      [t] -> Just (ItemScroll (Just t))
+      _   -> error $ "could not parse scroll: " ++ T.unpack itemName
+parseScroll _ = Nothing
+
+parsePotion :: T.Text -> Maybe ItemData
+parsePotion itemName
+  | " potion" `T.isInfixOf` itemName =
+    if not (" of " `T.isInfixOf` itemName)
+    then Just (ItemPotion Nothing)
+    else case [ potionType | (potionName, potionType) <- potionNames, (" of " `T.append` potionName) `T.isInfixOf` itemName ] of
+      [t] -> Just (ItemPotion (Just t))
+      _   -> error $ "could not parse potion: " ++ T.unpack itemName
+parsePotion _ = Nothing
 
 weaponTypeNames :: [(T.Text, WeaponType)]
 weaponTypeNames = [
@@ -127,12 +146,6 @@ itemTypeNames = [
 
   ("chunk", ItemFood FOOD_CHUNK),
 
-  -- potions
-  ("potion", ItemPotion Nothing),
-
-  -- scrolls
-  ("scroll", ItemScroll Nothing),
-
   -- corpses
   ("rotting", ItemCorpse (error "CorpseType") True),
   ("corpse", ItemCorpse (error "CorpseType") False),
@@ -144,4 +157,58 @@ itemTypeNames = [
   ("rune of Zot", ItemMiscellany (Just MISC_RUNE_OF_ZOT)),
 
   ("gold piece", ItemGold)
+  ]
+
+
+scrollNames :: [(T.Text, ScrollType)]
+scrollNames = [
+  ("identify", SCR_IDENTIFY),
+  ("teleportation", SCR_TELEPORTATION),
+  ("fear", SCR_FEAR),
+  ("noise", SCR_NOISE),
+  ("remove curse", SCR_REMOVE_CURSE),
+  ("summoning", SCR_SUMMONING),
+  ("enchant weapon", SCR_ENCHANT_WEAPON),
+  ("enchant armour", SCR_ENCHANT_ARMOUR),
+  ("torment", SCR_TORMENT),
+  ("random uselessness", SCR_RANDOM_USELESSNESS),
+  ("curse weapon", SCR_CURSE_WEAPON),
+  ("curse armour", SCR_CURSE_ARMOUR),
+  ("curse jewellery", SCR_CURSE_JEWELLERY),
+  ("immolation", SCR_IMMOLATION),
+  ("blinking", SCR_BLINKING),
+  ("magic mapping", SCR_MAGIC_MAPPING),
+  ("fog", SCR_FOG),
+  ("acquirement", SCR_ACQUIREMENT),
+  ("brand weapon", SCR_BRAND_WEAPON),
+  ("recharging", SCR_RECHARGING),
+  ("holy word", SCR_HOLY_WORD),
+  ("vulnerability", SCR_VULNERABILITY),
+  ("silence", SCR_SILENCE),
+  ("amnesia", SCR_AMNESIA)
+  ]
+
+potionNames :: [(T.Text, PotionType)]
+potionNames = [
+  ("curing", POT_CURING),
+  ("heal wounds", POT_HEAL_WOUNDS),
+  ("haste", POT_HASTE),
+  ("might", POT_MIGHT),
+  ("agility", POT_AGILITY),
+  ("brilliance", POT_BRILLIANCE),
+  ("flight", POT_FLIGHT),
+  ("poison", POT_POISON),
+  ("cancellation", POT_CANCELLATION),
+  ("ambrosia", POT_AMBROSIA),
+  ("invisibility", POT_INVISIBILITY),
+  ("degeneration", POT_DEGENERATION),
+  ("experience", POT_EXPERIENCE),
+  ("magic", POT_MAGIC),
+  ("berserk rage", POT_BERSERK_RAGE),
+  ("cure mutation", POT_CURE_MUTATION),
+  ("mutation", POT_MUTATION),
+  ("blood", POT_BLOOD),
+  ("resistance", POT_RESISTANCE),
+  ("lignification", POT_LIGNIFY),
+  ("beneficial mutation", POT_BENEFICIAL_MUTATION)
   ]
