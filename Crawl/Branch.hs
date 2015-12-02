@@ -36,7 +36,8 @@ branchNames = [
   ("Vaults", BRANCH_VAULTS),
   ("Crypt", BRANCH_CRYPT),
   ("Tomb", BRANCH_TOMB),
-  -- skip hell for now
+  ("Hell", BRANCH_VESTIBULE),
+  -- skip hell branches for now
   ("Zot", BRANCH_ZOT),
   ("Abyss", BRANCH_ABYSS),
   -- skip pan/zig too
