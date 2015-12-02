@@ -164,6 +164,7 @@ isPassable _ = True
 
 movementCost :: Feature -> Int
 movementCost DNGN_TRAP_TELEPORT = 10000
+movementCost DNGN_TRAP_ZOT = 10000
 movementCost DNGN_RUNED_DOOR = 10000
 movementCost DNGN_CLOSED_DOOR = 2
 movementCost DNGN_SHALLOW_WATER = 2
