@@ -41,6 +41,7 @@ data Move = Go !Int !Int
           | TakeOff InventorySlot
           | Quaff InventorySlot
           | Read InventorySlot
+          | BlinkTo InventorySlot !Int !Int
           | ScanBigStack
           | ScanItem !Int !Int
           | LookHere
@@ -51,6 +52,7 @@ data SendOp a where
   Press :: T.Text -> SendOp ()
   ExpectPrompt :: T.Text -> SendOp ()
   ExpectMenu :: (T.Text -> Bool) -> SendOp ()
+  ExpectBlink :: SendOp ()
   SetPickupFunc :: (Item -> Bool) -> SendOp ()
   AnswerYesNo :: T.Text -> SendOp ()
 
@@ -64,6 +66,9 @@ _expectPrompt = singleton . ExpectPrompt
 
 expectMenu :: (T.Text -> Bool) -> Send ()
 expectMenu = singleton . ExpectMenu
+
+expectBlink :: Send ()
+expectBlink = singleton ExpectBlink
 
 setPickupFunc :: (Item -> Bool) -> Send ()
 setPickupFunc = singleton . SetPickupFunc
@@ -136,18 +141,25 @@ moveProgram (Read slot) = do
   press "r"
   expectMenu (== "<white>Read which item?")
   press (T.singleton $ slotLetter slot)
+moveProgram (BlinkTo slot dx dy) = do
+  moveProgram (Read slot)
+  expectBlink
+  waltz dx dy
+  press "."
 moveProgram ScanBigStack = moveProgram (PickUp (const False))
 moveProgram (ScanItem dx dy) = do
   -- todo: send this all in a single message
   press "x"
-  let go 0 0 = return ()
-      go rx ry = moveProgram (Go sx sy) >> go (rx - sx) (ry - sy)
-        where sx = signum rx
-              sy = signum ry
-  go dx dy
+  waltz dx dy
   press "\ESC"
 moveProgram LookHere = press ";"
 moveProgram Dump = press "#"
+
+waltz :: Int -> Int -> Send ()
+waltz 0 0 = return ()
+waltz rx ry = moveProgram (Go sx sy) >> waltz (rx - sx) (ry - sy)
+  where sx = signum rx
+        sy = signum ry
 
 useAbility :: T.Text -> Send ()
 useAbility a = do
@@ -173,11 +185,14 @@ sendMoves move messages inputModeChanged menu
           = ([], press "s" >> prog)
         handleMessage message prog
           | "<cyan>Butcher " `T.isPrefixOf` message = ([Right "a"], prog)
-        handleMessage "<cyan>Blink to where?<lightgrey>" prog = ([Right "\ESC"], prog)
         handleMessage "<cyan>What kind of item would you like to acquire? (\\ to view known items)<lightgrey>" prog = ([], press "b" >> prog)
-        handleMessage message prog = (,) [] $ case view prog of
-          ExpectPrompt m :>>= prog' | message == m -> prog' ()
-          _ -> prog
+        handleMessage "<cyan>Blink to where?<lightgrey>" prog = case view prog of
+          ExpectBlink :>>= prog' -> peel (prog' ())
+          Return _ -> ([Right "\ESC"], prog)
+          _ -> error "bad prog in handleMessage(blink)"
+        handleMessage message (view -> ExpectPrompt m :>>= prog') | message == m = ([], prog' ())
+        handleMessage _ prog = ([], prog)
+
         handleInputMode :: Move -> MouseMode -> Send () -> ([Either Move T.Text], Send ())
         handleInputMode mv MOUSE_MODE_COMMAND prog = first (Left mv :) $ case view prog of
           -- XXX Mega Hack

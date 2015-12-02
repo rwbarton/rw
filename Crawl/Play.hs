@@ -219,6 +219,13 @@ setupNetwork recvHandler sendHandler = do
                  MONS_JORGRUN, MONS_DRACONIAN_SHIFTER, MONS_CACODEMON, MONS_PANDEMONIUM_LORD, MONS_ERESHKIGAL] ++
                 [MONS_SIGMUND, MONS_GRINDER]
 
+      blinkToRune =
+        (\p i fi pCoord@(Coord px py) -> do
+            guard (canRead p)
+            blinkSlot <- listToMaybe [ slot | (slot, itemData -> ItemScroll (Just SCR_BLINKING)) <- M.toList i ]
+            Coord rx ry <- listToMaybe [ runeCoord | (runeCoord, (_, items)) <- H.toList fi, runeCoord /= pCoord, item <- knownItems items, isRune item ]
+            return (BlinkTo blinkSlot (rx-px) (ry-py))) <$> player <*> inv <*> floorItems <*> loc
+
       bia =
         (\p l -> do
             guard (canBiA p)
@@ -279,6 +286,7 @@ setupNetwork recvHandler sendHandler = do
         scanFloorItems <$> level <*> loc <*> floorItems,
         eatWhenStarving,
         cureConfusion,
+        blinkToRune,
         pickupRune,
         bia,
         berserk,
