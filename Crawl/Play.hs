@@ -26,6 +26,7 @@ import Crawl.Backoff
 import Crawl.BadForms
 import Crawl.BananaUtils
 import Crawl.Bindings
+import Crawl.Branch
 import Crawl.Equipment
 import Crawl.Explore
 import Crawl.FloorItems
@@ -228,13 +229,15 @@ setupNetwork recvHandler sendHandler = do
             Coord rx ry <- listToMaybe [ runeCoord | (runeCoord, (_, items)) <- H.toList fi, runeCoord /= pCoord, item <- knownItems items, isRune item ]
             return (BlinkTo blinkSlot (rx-px) (ry-py))) <$> player <*> inv <*> floorItems <*> loc
 
+      hardBranch p = parseBranch (_place p) `elem` [BRANCH_DEPTHS, BRANCH_SNAKE, BRANCH_SPIDER, BRANCH_SHOALS, BRANCH_SWAMP, BRANCH_ABYSS]
+
       bia =
         (\p l -> do
             guard (canBiA p)
             let monstersInView = [ _monsterType mon | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)) ]
             let alliesInView = [ _monsterType mon | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)), _monsterAttitude mon == ATT_FRIENDLY ]
             guard $ null alliesInView
-            guard $ not (null $ monstersInView `intersect` biaMonsters)
+            guard $ not (null $ monstersInView `intersect` biaMonsters) || (not (null monstersInView) && hardBranch p)
             return BiA) <$> player <*> level
         where biaMonsters = [MONS_HYDRA, MONS_OKLOB_PLANT, MONS_SONJA]
 
