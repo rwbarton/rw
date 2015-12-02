@@ -76,6 +76,8 @@ weaponTypeNames = [
   ("hand axe", WPN_HAND_AXE),
   ("war axe", WPN_WAR_AXE),
   ("broad axe", WPN_BROAD_AXE),
+  ("obsidian axe", WPN_BROAD_AXE),
+  ("mithril axe", WPN_BROAD_AXE),
   ("battleaxe", WPN_BATTLEAXE),
   ("executioner's axe", WPN_EXECUTIONERS_AXE)
   ]
