@@ -133,3 +133,6 @@ dlvl p = DungeonLevel (parseBranch (_place p)) (fixDepth $ _depth p)
   where fixDepth 0 = 1 -- places in single-level branches are reported as
                        -- e.g. Temple 0
         fixDepth d = d
+
+canRead :: Player -> Bool
+canRead p = not (isBerserk p) && not (isConfused p) && not (isSilenced p) && not (hasStatus "-Scroll" p)

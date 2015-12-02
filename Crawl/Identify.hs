@@ -18,5 +18,5 @@ identify inv player = msum $ map (uncurry identifyItem) $ M.toList inv
   where identifyItem slot (itemData -> ItemPotion Nothing)
           | not (isBerserk player) = Just (Quaff slot)
         identifyItem slot (itemData -> ItemScroll Nothing)
-          | not (isBerserk player) && not (isConfused player) && not (isSilenced player) = Just (Read slot)
+          | canRead player = Just (Read slot)
         identifyItem _ _ = Nothing
