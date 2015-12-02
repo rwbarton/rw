@@ -62,8 +62,8 @@ type Send = Program SendOp
 press :: T.Text -> Send ()
 press = singleton . Press
 
-_expectPrompt :: T.Text -> Send ()
-_expectPrompt = singleton . ExpectPrompt
+expectPrompt :: T.Text -> Send ()
+expectPrompt = singleton . ExpectPrompt
 
 expectMenu :: (T.Text -> Bool) -> Send ()
 expectMenu = singleton . ExpectMenu
@@ -217,6 +217,7 @@ sendMoves move messages inputModeChanged menu
         handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())
         handleMenu (_menuTag -> "shop") prog = ([], press "\ESC" >> prog)
         handleMenu (_menuTag -> "skills") prog = ([Right "\r"], prog)
+        handleMenu (_menuTag -> "spell") prog = ([Right "\ESC"], expectPrompt "<cyan>Forget which spell ([?*] list [ESC] exit)? <lightgrey>" >> press "" >> prog)
         handleMenu (_menuTitle -> title) prog
           | "<white>Inventory: " `T.isPrefixOf` title = ([Right "\ESC"], prog)
         handleMenu mn prog
