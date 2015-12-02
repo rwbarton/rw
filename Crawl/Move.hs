@@ -42,6 +42,7 @@ data Move = Go !Int !Int
           | Quaff InventorySlot
           | Read InventorySlot
           | BlinkTo InventorySlot !Int !Int
+          | GargoyleFlight
           | ScanBigStack
           | ScanItem !Int !Int
           | LookHere
@@ -146,6 +147,7 @@ moveProgram (BlinkTo slot dx dy) = do
   expectBlink
   waltz dx dy
   press "."
+moveProgram GargoyleFlight = useAbility "F"
 moveProgram ScanBigStack = moveProgram (PickUp (const False))
 moveProgram (ScanItem dx dy) = do
   -- todo: send this all in a single message

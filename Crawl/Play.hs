@@ -273,6 +273,8 @@ setupNetwork recvHandler sendHandler = do
         [ Quaff slot | (slot, itemData -> ItemPotion (Just s)) <- M.toList i, s `elem` [POT_EXPERIENCE, POT_BENEFICIAL_MUTATION] ] ++
         [ Read slot | (slot, itemData -> ItemScroll (Just SCR_ACQUIREMENT)) <- M.toList i ]
 
+      fly = (\p -> guard (_species p == "Gargoyle" && _xl p >= 14 && _mp p >= 3 && not (hasStatus "Fly" p)) >> return GargoyleFlight) <$> player
+
       beenTo = fmap (flip HS.member) $
         R.accumB HS.empty $
         (HS.insert . dlvl <$> player) R.<@ moves
@@ -306,6 +308,7 @@ setupNetwork recvHandler sendHandler = do
         dropJunkEquipment <$> inv <*> equip,
         enchantEquipment <$> inv <*> equip,
         useGoodConsumables <$> inv,
+        fly,
         exploreWithAuto,
         identify <$> inv <*> player,
         descend <$> level <*> loc <*> (dlvl <$> player) <*> beenTo
