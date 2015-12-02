@@ -169,7 +169,7 @@ setupNetwork recvHandler sendHandler = do
       berserk =
         (\p i ll l -> do
             let teleInstead =
-                  guard (not (canTrogBerserk p) && not (hasStatus "Tele" p) && canRead p) >>
+                  guard (not (canTrogBerserk p) && not (hasStatus "Tele" p) && canRead p && lowHP p) >>
                   listToMaybe [ slot | (slot, itemData -> ItemScroll (Just SCR_TELEPORTATION)) <- M.toList i ]
             guard $ canTrogBerserk p || isJust teleInstead
             let monstersInView = [ (monType, dist sq l)
@@ -177,7 +177,7 @@ setupNetwork recvHandler sendHandler = do
                                    Just (_monsterType -> monType) <- return (H.lookup sq (_levelMonsters ll)),
                                    not $ nonthreatening monType ]
             guard $ not . null $ monstersInView
-            guard $ 2 * _hp p < _mhp p
+            guard $ lowHP p && not (null $ filter ((<= 1) . snd) monstersInView)
               || sum [ meleeThreat m | (m, d) <- monstersInView, d <= 2] >= _xl p
             return $ maybe Berserk Read teleInstead) <$> player <*> inv <*> level <*> loc
         where meleeThreat MONS_GNOLL = 1
@@ -205,6 +205,8 @@ setupNetwork recvHandler sendHandler = do
               meleeThreat MONS_SNORG = 18
               meleeThreat MONS_PLAYER_GHOST = 27
               meleeThreat _ = 0
+
+              lowHP p = 2 * _hp p < _mhp p
 
       trogsHand =
         (\p l -> do
