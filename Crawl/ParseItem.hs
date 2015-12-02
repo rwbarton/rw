@@ -51,6 +51,9 @@ parseWeapon itemName =
 weaponTypeNames :: [(T.Text, WeaponType)]
 weaponTypeNames = [
   -- weapons we care about
+  ("dagger", WPN_DAGGER),
+  ("short sword", WPN_SHORT_SWORD),
+
   ("hand axe", WPN_HAND_AXE),
   ("war axe", WPN_WAR_AXE),
   ("broad axe", WPN_BROAD_AXE),

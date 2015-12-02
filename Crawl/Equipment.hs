@@ -120,6 +120,8 @@ itemTypeScore _ = 1
 -- Should automatically generate all of these from crawl...
 
 baseDamage :: WeaponType -> Int
+baseDamage WPN_DAGGER = 1
+baseDamage WPN_SHORT_SWORD = 2
 baseDamage WPN_HAND_AXE = 7
 baseDamage WPN_WAR_AXE = 11
 baseDamage WPN_BROAD_AXE = 13
