@@ -59,7 +59,7 @@ branchNames = [
 branchDepth :: Branch -> Int
 branchDepth BRANCH_DUNGEON = 15
 branchDepth BRANCH_TEMPLE = 1
-branchDepth BRANCH_ORC = 4
+branchDepth BRANCH_ORC = 3      -- not really but...
 branchDepth BRANCH_ELF = 3
 branchDepth BRANCH_LAIR = 8
 branchDepth BRANCH_SWAMP = 4
