@@ -116,17 +116,23 @@ hungerLevel p = fromMaybe HS_SATIATED $
                           "Satiated" {- not really used -}, "Full",
                           "Very Full", "Engorged"]
 
+canUseGodAbility :: T.Text -> Int -> Player -> Bool
+canUseGodAbility g stars p =
+  _god p == g && _pietyStars p >= stars
+  && not (isBerserk p) && not (isConfused p) && not (isSilenced p)
+  && hungerLevel p >= HS_NEAR_STARVING
+
 canBerserk :: Player -> Bool
-canBerserk p = not (isBerserk p) && not (isConfused p) && not (isExhausted p) && not (isMesmerised p) && _pietyStars p >= 1 && _god p == "Trog"
-               && hungerLevel p >= HS_HUNGRY
+canBerserk p = not (isExhausted p) && not (isMesmerised p) && hungerLevel p >= HS_HUNGRY
+
+canTrogBerserk :: Player -> Bool
+canTrogBerserk p = canUseGodAbility "Trog" 1 p && canBerserk p
 
 canTrogsHand :: Player -> Bool
-canTrogsHand p = not (isBerserk p) && not (isConfused p) && not (hasStatus "MR" p) && _pietyStars p >= 2 && _god p == "Trog"
-                 && hungerLevel p >= HS_NEAR_STARVING
+canTrogsHand p = canUseGodAbility "Trog" 2 p
 
 canBiA :: Player -> Bool
-canBiA p = not (isBerserk p) && not (isConfused p) && _pietyStars p >= 4 && _god p == "Trog"
-           && hungerLevel p >= HS_NEAR_STARVING
+canBiA p = canUseGodAbility "Trog" 4 p
 
 dlvl :: Player -> DungeonLevel
 dlvl p = DungeonLevel (parseBranch (_place p)) (fixDepth $ _depth p)

@@ -140,7 +140,7 @@ setupNetwork recvHandler sendHandler = do
       burnBooks =
         (\fi l p -> do
             guard (any isBook $ concatMap (knownItems . snd . snd) . filter ((/= l) . fst) $ H.toList fi)
-            guard $ not (isConfused p) && not (isBerserk p) && not (isSilenced p) && _god p == "Trog"
+            guard $ canUseGodAbility "Trog" 0 p
             return BurnBooks) <$> floorItems <*> loc <*> player
 
       threatened =
@@ -169,9 +169,9 @@ setupNetwork recvHandler sendHandler = do
       berserk =
         (\p i ll l -> do
             let teleInstead =
-                  guard (hasStatus "Exh" p && not (hasStatus "Tele" p) && canRead p) >>
+                  guard (not (canTrogBerserk p) && not (hasStatus "Tele" p) && canRead p) >>
                   listToMaybe [ slot | (slot, itemData -> ItemScroll (Just SCR_TELEPORTATION)) <- M.toList i ]
-            guard $ canBerserk p || isJust teleInstead
+            guard $ canTrogBerserk p || isJust teleInstead
             let monstersInView = [ (monType, dist sq l)
                                  | sq <- HS.toList $ _levelLOS ll,
                                    Just (_monsterType -> monType) <- return (H.lookup sq (_levelMonsters ll)),
