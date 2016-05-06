@@ -22,10 +22,13 @@ data Move = Go !Int !Int
           | Attack !Int !Int
           | Worship
           | Abandon
+          | ExitTheAbyss
           | Berserk
           | TrogsHand
           | BiA
           | BurnBooks
+          | Banish !Int !Int
+          | RuSacrifice
           | GoUp
           | GoDown
           | Rest
@@ -54,7 +57,7 @@ data Move = Go !Int !Int
 data SendOp a where
   Press :: T.Text -> SendOp ()
   ExpectPrompt :: T.Text -> SendOp ()
-  ExpectMenu :: (T.Text -> Bool) -> SendOp ()
+  ExpectMenu :: (T.Text -> Bool) -> SendOp Menu
   ExpectBlink :: SendOp ()
   SetPickupFunc :: (Item -> Bool) -> SendOp ()
   AnswerYesNo :: T.Text -> SendOp ()
@@ -67,7 +70,7 @@ press = singleton . Press
 expectPrompt :: T.Text -> Send ()
 expectPrompt = singleton . ExpectPrompt
 
-expectMenu :: (T.Text -> Bool) -> Send ()
+expectMenu :: (T.Text -> Bool) -> Send Menu
 expectMenu = singleton . ExpectMenu
 
 expectBlink :: Send ()
@@ -103,10 +106,20 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   _        -> error "tried to make illegal attack"
 moveProgram Worship = press "p"
 moveProgram Abandon = useAbility "X"
+moveProgram ExitTheAbyss = useAbility "a"
 moveProgram Berserk = useAbility "a"
 moveProgram TrogsHand = useAbility "b"
 moveProgram BiA = useAbility "c"
 moveProgram BurnBooks = useAbility "d"
+moveProgram (Banish dx dy) = useAbility "c" >> press "r" >> waltz dx dy >> press "."
+moveProgram RuSacrifice = do
+  press "a"
+  menu <- expectMenu (T.isPrefixOf "<white>  Ability - do what?")
+  let sacrificeOptions = filter (T.isPrefixOf "Sacrifice " . T.drop 5 . _menuItemText) (_menuItems menu)
+      bestOption = head $ [ opt | sac <- ["Artifice", "Resistance", "Hand", "Love"], opt <- sacrificeOptions,
+                                  T.isInfixOf sac (_menuItemText opt) ]
+                          ++ sacrificeOptions
+  press (T.singleton $ _menuItemKey bestOption)
 moveProgram GoUp = press "<"
 moveProgram GoDown = press ">"
 moveProgram Rest = press "."
@@ -229,8 +242,8 @@ sendMoves move messages inputModeChanged menu
                                   "<white>Enchant which item?", "<white>Enchant which weapon?",
                                   "<white>Brand which weapon?"]
           = ([Right (anyItem mn)], prog)
-        handleMenu (_menuTitle -> title) prog = case view prog of
-          ExpectMenu f :>>= prog' | f title -> peel (prog' ())
+        handleMenu mn prog = case view prog of
+          ExpectMenu f :>>= prog' | f (_menuTitle mn) -> peel (prog' mn)
           _ -> ([], prog)
 
 peel :: Send () -> ([Either Move T.Text], Send ())

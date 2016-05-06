@@ -241,6 +241,20 @@ setupNetwork recvHandler sendHandler = do
             return BiA) <$> player <*> level
         where biaMonsters = [MONS_HYDRA, MONS_OKLOB_PLANT, MONS_SONJA]
 
+      banish =
+        (\p l (Coord px py) -> do
+            guard (canUseGodAbility "Lugonu" 3 p && _mp p >= 4)
+            Coord tx ty <- listToMaybe [ sq | sq <- HS.toList $ _levelLOS l, Just mon <- return (H.lookup sq (_levelMonsters l)), _monsterType mon `elem` banishMonsters ]
+            return (Banish (tx-px) (ty-py))) <$> player <*> level <*> loc
+        where banishMonsters = [MONS_PRINCE_RIBBIT, MONS_CYCLOPS, MONS_HILL_GIANT, MONS_HYDRA, MONS_OKLOB_PLANT, MONS_SONJA, MONS_PLAYER_GHOST]
+
+      ruReady = R.stepper False $
+        (const True <$> R.filterE ((== "<brown>Ru believes you are ready to make a new sacrifice.<lightgrey>") . _msgText) messages)
+        `R.union` (const False <$> R.filterE (\m -> case m of {RuSacrifice -> True; _ -> False}) moves)
+      ru = (\r -> do
+        guard r
+        return RuSacrifice) <$> ruReady
+
       moveFailures = filterBy (\(t, (t', lm), im) -> guard (im == MOUSE_MODE_COMMAND && t == t') >> return (lm,t)) $
                      (,,) <$> (_time <$> player) <*> lastMove R.<@> inputModeEvents
 
@@ -292,18 +306,21 @@ setupNetwork recvHandler sendHandler = do
 
       move = foldr (liftA2 (flip fromMaybe)) (pure Rest) $ map (fmap filterLegalInForm player <*>) [
         dump,
+        (\p -> guard (_god p == "Lugonu" && _place p == "Abyss") >> return ExitTheAbyss) <$> player,
         scanFloorItems <$> level <*> loc <*> floorItems,
         eatWhenStarving,
         cureConfusion,
         blinkToRune,
         pickupRune,
         bia,
+        banish,
         berserk,
         healWounds,
         trogsHand,
         -- (\p -> guard (_god p == "Makhleb" || _god p == "Nemelex Xobeh" || _god p == "Okawaru") >> return Abandon) <$> player,
         (\p f -> guard (_god p == "") >> f) <$> player <*> (findOtherAltar <$> level <*> loc <*> pastGods),
         --(\p f -> guard (not ("Trog" `elem` p) || not (null p) && not ("Trog" `elem` p)) >> f) <$> pastGods <*> (findTrogAltar <$> level <*> loc),
+        ru,
         enterBranches <$> level <*> loc <*> beenTo,
         killInvisible,
         killWithTabIfThreatened,
