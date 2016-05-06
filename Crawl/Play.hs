@@ -65,6 +65,8 @@ setupNetwork recvHandler sendHandler = do
       inputModeB = R.stepper MOUSE_MODE_NORMAL inputModeEvents
       inputModeChanged = R.filterApply (fmap (/=) inputModeB) inputModeEvents
 
+      menus = processMenus demultiplexed
+
       goodbye = R.filterE (\msg -> msg ^? key "msg" == Just "txt" &&
                                    msg ^? key "id"  == Just "crt" &&
                                    msg ^? key "lines".key "0"._String.to (T.isInfixOf "Goodbye,") == Just True)
@@ -356,8 +358,7 @@ setupNetwork recvHandler sendHandler = do
         identify <$> inv <*> player,
         descend <$> level <*> loc <*> (dlvl <$> player) <*> beenTo
         ]
-      (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged)
-                        (filterBy (\msg -> guard (msg ^? key "msg" == Just "menu") >> return (parseMenu msg)) demultiplexed)
+      (moves, goText) = sendMoves move messages (R.whenE stillAlive inputModeChanged) menus
       lastMove = R.stepper (0, GoDown) {- whatever -} $ (,) <$> (_time <$> player) R.<@> moves
       clearText = fmap (const " ") goodbye
 
