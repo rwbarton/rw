@@ -284,6 +284,8 @@ setupNetwork recvHandler sendHandler = do
         R.accumB HS.empty $
         (HS.insert . dlvl <$> player) R.<@ moves
 
+      pastGods = fmap (filter (not . T.null) . HS.toList) $ R.accumB HS.empty $ (HS.insert . _god <$> player) R.<@ moves
+
       lastDump = R.stepper 0 $ (_time <$> player) R.<@ R.filterE (\mv -> case mv of { Dump -> True; _ -> False }) moves
       dump = (\l t -> guard (t `div` 10000 > l `div` 10000) >> Just Dump) <$> lastDump <*> (_time <$> player)
 
@@ -299,6 +301,9 @@ setupNetwork recvHandler sendHandler = do
         berserk,
         healWounds,
         trogsHand,
+        -- (\p -> guard (_god p == "Makhleb" || _god p == "Nemelex Xobeh" || _god p == "Okawaru") >> return Abandon) <$> player,
+        (\p f -> guard (_god p == "") >> f) <$> player <*> (findOtherAltar <$> level <*> loc <*> pastGods),
+        --(\p f -> guard (not ("Trog" `elem` p) || not (null p) && not ("Trog" `elem` p)) >> f) <$> pastGods <*> (findTrogAltar <$> level <*> loc),
         enterBranches <$> level <*> loc <*> beenTo,
         killInvisible,
         killWithTabIfThreatened,

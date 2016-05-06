@@ -20,6 +20,8 @@ import Crawl.ParseItem
 
 data Move = Go !Int !Int
           | Attack !Int !Int
+          | Worship
+          | Abandon
           | Berserk
           | TrogsHand
           | BiA
@@ -99,6 +101,8 @@ moveProgram (Attack dx dy) = press $ case (dx, dy) of
   (-1,  1) -> "\2"
   ( 1,  1) -> "\14"
   _        -> error "tried to make illegal attack"
+moveProgram Worship = press "p"
+moveProgram Abandon = useAbility "X"
 moveProgram Berserk = useAbility "a"
 moveProgram TrogsHand = useAbility "b"
 moveProgram BiA = useAbility "c"

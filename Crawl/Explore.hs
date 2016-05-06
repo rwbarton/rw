@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Crawl.Explore (
-  kill, explore, loot, enterBranches, descend
+  kill, explore, loot, findTrogAltar, findOtherAltar, enterBranches, descend
   ) where
 
 import Data.List (isPrefixOf)
@@ -9,6 +9,7 @@ import Data.Graph.AStar (aStar)
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
 import qualified Data.Set as S
+import qualified Data.Text as T
 
 import Crawl.Bindings
 import Crawl.Branch
@@ -70,6 +71,39 @@ loot info loc items inv = case pathfind (HS.fromList $ H.keys $ H.filter (possib
     | all (not . isTeleTrap . (_levelMap info H.!)) locs -> Just (moveTo loc loc')
   _ -> Nothing
   where isTeleTrap = (== DNGN_TRAP_TELEPORT)
+
+findTrogAltar :: LevelInfo -> Coord -> Maybe Move
+findTrogAltar info loc = case pathfind (HS.fromList $ H.keys $ H.filter isTrogAltar (_levelMap info)) info loc False of
+  Just [] -> Just Worship
+  Just (loc' : _) -> Just (moveTo loc loc')
+  _ -> Nothing
+  where isTrogAltar DNGN_ALTAR_TROG = True
+        isTrogAltar _ = False
+
+findOtherAltar :: LevelInfo -> Coord -> [T.Text] -> Maybe Move
+findOtherAltar info loc _fs = case pathfind (HS.fromList $ H.keys $ H.filter isOtherAltar (_levelMap info)) info loc False of
+  Just [] -> Just Worship
+  Just (loc' : _) -> Just (moveTo loc loc')
+  _ -> Nothing
+  where -- isOtherAltar DNGN_ALTAR_CHEIBRIADOS = True
+        -- isOtherAltar DNGN_ALTAR_GOZAG = True
+        --- isOtherAltar DNGN_ALTAR_QAZLAL = True
+        --- isOtherAltar DNGN_ALTAR_DITHMENOS = True
+        --- isOtherAltar DNGN_ALTAR_OKAWARU = True
+        isOtherAltar DNGN_ALTAR_MAKHLEB = True
+        --- isOtherAltar DNGN_ALTAR_SHINING_ONE = True
+        --- isOtherAltar DNGN_ALTAR_ZIN = True
+
+        -- isOtherAltar DNGN_ALTAR_ASHENZARI = True
+        -- isOtherAltar DNGN_ALTAR_SIF_MUNA = True
+        -- isOtherAltar DNGN_ALTAR_VEHUMET = "Vehumet" `notElem` fs
+        -- isOtherAltar DNGN_ALTAR_KIKUBAAQUDGHA = True
+        --- isOtherAltar DNGN_ALTAR_NEMELEX_XOBEH = null fs -- "Nemelex Xobeh" `notElem` fs
+        --- isOtherAltar DNGN_ALTAR_MAKHLEB = null fs -- "Makhleb" `notElem` fs
+        --- isOtherAltar DNGN_ALTAR_OKAWARU = null fs -- "Okawaru" `notElem` fs
+        -- isOtherAltar DNGN_ALTAR_RU = True
+
+        isOtherAltar _ = False
 
 enterBranches :: LevelInfo -> Coord -> (DungeonLevel -> Bool) -> Maybe Move
 enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isBranchEntrance (_levelMap info)) info loc True of
