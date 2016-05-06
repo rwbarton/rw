@@ -287,6 +287,20 @@ setupNetwork recvHandler sendHandler = do
         where dxs = [-1, -1, -1, 0, 1, 1, 1, 0]
               dys = [-1, 0, 1, 1, 1, 0, -1, -1]
 
+      buffForDepths =
+        (\p i -> do
+          guard (hardBranch p)
+          listToMaybe $
+            [ Quaff slot | (slot, itemData -> ItemPotion (Just POT_HASTE)) <- M.toList i, not (hasStatus "Fast" p) ] ++
+            [ Quaff slot | (slot, itemData -> ItemPotion (Just POT_MIGHT)) <- M.toList i, not (hasStatus "Might" p) ] ++
+            [ Quaff slot | (slot, itemData -> ItemPotion (Just POT_AGILITY)) <- M.toList i, not (hasStatus "Agi" p) ] ++
+            [ Quaff slot | (slot, itemData -> ItemPotion (Just POT_RESISTANCE)) <- M.toList i, not (hasStatus "Resist" p) ]) <$> player <*> inv
+
+      mapDepths = (\p i -> do
+          guard (hardBranch p)
+          listToMaybe $
+            [ Read slot | (slot, itemData -> ItemScroll (Just SCR_MAGIC_MAPPING)) <- M.toList i ]) <$> player <*> inv
+
       useGoodConsumables i =
         listToMaybe $
         [ Quaff slot | (slot, itemData -> ItemPotion (Just s)) <- M.toList i, s `elem` [POT_EXPERIENCE, POT_BENEFICIAL_MUTATION] ] ++
@@ -322,6 +336,7 @@ setupNetwork recvHandler sendHandler = do
         --(\p f -> guard (not ("Trog" `elem` p) || not (null p) && not ("Trog" `elem` p)) >> f) <$> pastGods <*> (findTrogAltar <$> level <*> loc),
         ru,
         enterBranches <$> level <*> loc <*> beenTo,
+        mapDepths,
         killInvisible,
         killWithTabIfThreatened,
         eat,
@@ -330,6 +345,7 @@ setupNetwork recvHandler sendHandler = do
         pickup,
         rest,
         killWithTab,
+        buffForDepths,
         loot <$> level <*> loc <*> floorItems <*> inv, -- should probably produce set of things we want here, not in Explore
         upgradeEquipment <$> inv <*> equip <*> player <*> eatAnything,
         dropJunkEquipment <$> inv <*> equip,
