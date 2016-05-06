@@ -232,7 +232,7 @@ sendMoves move messages inputModeChanged menu
         handleInputMode _ _ prog = ([], prog)
 
         handleMenu :: Menu -> Send () -> ([Either Move T.Text], Send ())
-        handleMenu (_menuTag -> "shop") prog = ([], press "\ESC" >> prog)
+        handleMenu (_menuTag -> "shop") prog = ([Right "\ESC"], prog)
         handleMenu (_menuTag -> "skills") prog = ([Right "\r"], prog)
         handleMenu (_menuTag -> "spell") prog = ([Right "\ESC"], expectPrompt "<cyan>Forget which spell ([?*] list [ESC] exit)? <lightgrey>" >> press "" >> prog)
         handleMenu (_menuTitle -> title) prog
