@@ -83,23 +83,49 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance DNGN_ENTER_ICE_CAVE = True
         isBranchEntrance DNGN_ENTER_VOLCANO = True
         isBranchEntrance DNGN_ENTER_WIZLAB = True
+        -- isBranchEntrance DNGN_ENTER_LABYRINTH = True
+
+        isBranchEntrance DNGN_ENTER_PANDEMONIUM = True
+        isBranchEntrance DNGN_TRANSIT_PANDEMONIUM = True
+        -- isBranchEntrance DNGN_ENTER_HELL = not (beenToBranch BRANCH_VESTIBULE)
+        -- isBranchEntrance DNGN_EXIT_HELL = True
+
+        -- isBranchEntrance DNGN_ENTER_TEMPLE = not $ beenToBranch BRANCH_TEMPLE
+
+        isBranchEntrance DNGN_STONE_STAIRS_DOWN_I = diving BRANCH_SNAKE || diving BRANCH_SPIDER || diving BRANCH_SWAMP || diving BRANCH_SHOALS
+        isBranchEntrance DNGN_STONE_STAIRS_DOWN_II = diving BRANCH_SNAKE || diving BRANCH_SPIDER || diving BRANCH_SWAMP || diving BRANCH_SHOALS
+        isBranchEntrance DNGN_STONE_STAIRS_DOWN_III = diving BRANCH_SNAKE || diving BRANCH_SPIDER || diving BRANCH_SWAMP || diving BRANCH_SHOALS
+        isBranchEntrance DNGN_ESCAPE_HATCH_DOWN = diving BRANCH_SNAKE || diving BRANCH_SPIDER || diving BRANCH_SWAMP || diving BRANCH_SHOALS
 
         isBranchEntrance DNGN_ENTER_LAIR = not $ beenToBranch BRANCH_LAIR
-        isBranchEntrance DNGN_ENTER_SNAKE = not $ beenToBranch BRANCH_SNAKE
-        isBranchEntrance DNGN_ENTER_SWAMP = not $ beenToBranch BRANCH_SWAMP
-        isBranchEntrance DNGN_ENTER_SHOALS = not $ beenToBranch BRANCH_SHOALS
-        isBranchEntrance DNGN_ENTER_SPIDER = not $ beenToBranch BRANCH_SPIDER
-        isBranchEntrance DNGN_ENTER_SLIME = not $ beenToBranch BRANCH_SLIME
 
-        isBranchEntrance DNGN_ENTER_ORC = not $ beenToBranch BRANCH_ORC
-        isBranchEntrance DNGN_ENTER_ELF = not $ beenToBranch BRANCH_ELF
+        isBranchEntrance DNGN_ENTER_SNAKE = beenTo (DungeonLevel BRANCH_LAIR 8)
+        isBranchEntrance DNGN_ENTER_SWAMP = beenTo (DungeonLevel BRANCH_LAIR 8)
+        -- isBranchEntrance DNGN_ENTER_SHOALS = beenTo (DungeonLevel BRANCH_LAIR 8) -- shoals is a bad place imo
+        isBranchEntrance DNGN_ENTER_SPIDER = beenTo (DungeonLevel BRANCH_LAIR 8)
+
+{-
+        isBranchEntrance DNGN_ENTER_SLIME = not $ beenToBranch BRANCH_SLIME
+-}
+
+        isBranchEntrance DNGN_ENTER_ORC = beenToBranch BRANCH_LAIR && (not $ beenToBranch BRANCH_ORC)
+{-
+beenToBranch BRANCH_LAIR && beenTo (DungeonLevel BRANCH_DUNGEON 15) &&
+                                          (not $ beenToBranch BRANCH_ORC)
+-}
+        -- isBranchEntrance DNGN_ENTER_ELF = not $ beenToBranch BRANCH_ELF
+
+        isBranchEntrance DNGN_ENTER_DEPTHS = beenToBranch BRANCH_ORC && (not $ beenToBranch BRANCH_DEPTHS)
 
         -- leave these places immediately
         isBranchEntrance DNGN_EXIT_ELF = True
+        -- isBranchEntrance DNGN_EXIT_DEPTHS = True
+{-
         isBranchEntrance DNGN_EXIT_SNAKE = True
         isBranchEntrance DNGN_EXIT_SWAMP = True
         isBranchEntrance DNGN_EXIT_SHOALS = True
         isBranchEntrance DNGN_EXIT_SPIDER = True
+-}
         isBranchEntrance DNGN_EXIT_SLIME = True
         isBranchEntrance DNGN_EXIT_ICE_CAVE = True
         isBranchEntrance DNGN_EXIT_VOLCANO = True
@@ -111,6 +137,7 @@ enterBranches info loc beenTo = case pathfind (HS.fromList $ H.keys $ H.filter i
         isBranchEntrance _ = False
 
         beenToBranch br = beenTo (DungeonLevel br 1)
+        diving br = beenToBranch br && not (beenTo (DungeonLevel br (branchDepth br)))
 
 descend :: LevelInfo -> Coord -> DungeonLevel -> (DungeonLevel -> Bool) -> Maybe Move
 descend info loc dl beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isDownStair (_levelMap info)) info loc True of
@@ -125,8 +152,11 @@ descend info loc dl beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isDo
         isDownStair DNGN_STONE_STAIRS_UP_I = exitingBranch
         isDownStair DNGN_STONE_STAIRS_UP_II = exitingBranch
         isDownStair DNGN_STONE_STAIRS_UP_III = exitingBranch
+        isDownStair DNGN_ESCAPE_HATCH_UP = exitingBranch
         isDownStair DNGN_EXIT_LAIR = exitingBranch
         isDownStair DNGN_EXIT_ORC = exitingBranch
+
+        isDownStair DNGN_EXIT_TEMPLE = True
 
         isDownStair DNGN_EXIT_ZIGGURAT = True
         isDownStair DNGN_EXIT_BAZAAR = True
@@ -143,13 +173,16 @@ descend info loc dl beenTo = case pathfind (HS.fromList $ H.keys $ H.filter isDo
 
         DungeonLevel br d = dl
         exitingBranch = all beenTo [ DungeonLevel br d'
-                                   | d' <- [d..branchDepth br] ]
+                                   | d' <- [d+1..branchDepth br] ] && not (br == BRANCH_DUNGEON && beenTo (DungeonLevel BRANCH_ORC 1))
 
 stairDirection :: Feature -> Move
 stairDirection DNGN_STONE_STAIRS_UP_I = GoUp
 stairDirection DNGN_STONE_STAIRS_UP_II = GoUp
 stairDirection DNGN_STONE_STAIRS_UP_III = GoUp
-stairDirection feat | DNGN_EXIT_ORC <= feat && feat <= DNGN_EXIT_SPIDER = GoUp
+stairDirection DNGN_ESCAPE_HATCH_UP = GoUp
+stairDirection DNGN_EXIT_LABYRINTH = GoUp
+stairDirection DNGN_EXIT_HELL = GoUp
+stairDirection feat | DNGN_EXIT_ORC <= feat && feat <= DNGN_EXIT_DEPTHS = GoUp
 stairDirection _ = GoDown
 
 moveTo :: Coord -> Coord -> Move
